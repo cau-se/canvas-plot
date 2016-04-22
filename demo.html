@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>CanvasPlot Demo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="canvasplot.css">
+  <script src="jquery-2.2.3.min.js" charset="utf-8"></script>
+  <script src="d3.min.js" charset="utf-8"></script>
+  <script src="canvasplot.js" charset="utf-8"></script>
+</head>
+<body>
+
+<div id="maincontainer">
+
+</div>
+
+<script type="text/javascript">
+$(document).ready(function() {
+	var data1 = [[-1,5], [0.5,6], [5,-2.5], [6,1], [10,9], [20,-55]];
+	var plot = new CanvasDataPlot(d3.select("#maincontainer"), [900, 450], {
+		xAxisLabel: "IQ",
+		yAxisLabel: "Test Score"
+	});
+	plot.addDataSet("ds1", "Test 1", data1, "orange", true);
+
+	var ts1 = [];
+	var ts2 = [];
+	var now = new Date();
+	for(var i=0; i<100; i++) {
+		var time = new Date(now);
+		time.setHours(i);
+		ts1.push([time, Math.random()]);
+		ts2.push([time, Math.random()]);
+	}
+	var plot2 = new TimeSeriesPlot(d3.select("#maincontainer"), [1000, 450], "Random", null);
+	plot2.addDataSet("plot1", "Random 1", ts1, "orange", true);
+	plot2.addDataSet("plot2", "Random 2", ts2, "steelblue", true);
+	plot2.setZoomYAxis(false);
+
+	$(window).resize(function() {
+		plot2.resize([window.innerWidth-100, Math.round(0.45*(window.innerWidth-100))]);
+	});
+});
+</script>
+</body>
+</html>
