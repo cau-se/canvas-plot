@@ -38,7 +38,7 @@ function CanvasDataPlot(parentElement, canvasDimensions, config) {
 	this.legendYPadding = config.legendYPadding || 6;
 	this.legendLineHeight = config.legendLineHeight || 11;
 	this.margin = config.plotMargins || {top: 20, right: 20, bottom: (this.xAxisLabelText.length > 0 ? 60 : 30), left: (this.yAxisLabelText.length > 0 ? 65 : 50)};
-	this.showTooltips = config.showTooltips || true;
+	this.showTooltips = (config.hasOwnProperty("showTooltips") ? config.showTooltips : true);
 	this.tooltipRadiusSquared = config.tooltipRadius || 5.5;
 	this.tooltipRadiusSquared *= this.tooltipRadiusSquared;
 	//this.enableValueSelection = config.enableValueSelection || false;
@@ -317,6 +317,10 @@ CanvasDataPlot.prototype.calculateXDomain = function() {
 		min = minCandidate < min ? minCandidate : min;
 		max = max < maxCandidate ? maxCandidate : max;
 	}
+	if(max-min <= 0) {
+		min = max;
+		max += 1;
+	}
 	return [min, max];
 };
 
@@ -330,6 +334,10 @@ CanvasDataPlot.prototype.calculateYDomain = function() {
 	for(var i=1; i<this.data.length; ++i) {
 		min = Math.min(min, d3.min(this.data[i], function(d) { return d[1]; }));
 		max = Math.max(max, d3.max(this.data[i], function(d) { return d[1]; }));
+	}
+	if(max-min <= 0) {
+		min -= 1;
+		max += 1;
 	}
 	return [min, max];
 };
@@ -492,6 +500,16 @@ CanvasDataPlot.prototype.destroy = function() {
 	this.div.remove();
 };
 
+function shallowObjectCopy(inObj) {
+	var original = inObj || {};
+	var keys = Object.getOwnPropertyNames(original);
+	var outObj = {};
+	keys.forEach(function(k) {
+		outObj[k] = original[k];
+	});
+	return outObj;
+}
+
 
 
 function CanvasTimeSeriesPlot(parentElement, canvasDimensions, config) {
@@ -632,11 +650,82 @@ CanvasTimeSeriesPlot.prototype.drawDataSet = function(dataIndex) {
 
 
 
+function CanvasVectorSeriesPlot(parentElement, canvasDimensions, config) {
+	// Data element format: [Date, y value, direction, magnitude]
+	
+	var configCopy = shallowObjectCopy(config);
+	configCopy["showTooltips"] = false;
+	
+	CanvasTimeSeriesPlot.call(this, parentElement, canvasDimensions, configCopy);
+}
+CanvasVectorSeriesPlot.prototype = Object.create(CanvasTimeSeriesPlot.prototype);
+
+CanvasVectorSeriesPlot.prototype.updateTooltip = function() {
+	//TODO
+};
+
+CanvasVectorSeriesPlot.prototype.drawDataSet = function(dataIndex) {
+	var d = this.data[dataIndex];
+	var iStart = this.displayIndexStart[dataIndex];
+	var iEnd = this.displayIndexEnd[dataIndex];
+	var informationDensity = this.informationDensity[dataIndex];
+
+	var drawEvery = 1;
+	if(informationDensity > this.maxInformationDensity) {
+		drawEvery = Math.floor(informationDensity / this.maxInformationDensity);
+	}
+
+	// Make iStart divisivble by drawEvery to prevent flickering graphs while panning
+	iStart = Math.max(0, iStart - drawEvery - iStart%drawEvery);
+	iEnd = Math.min(d.length-1 , iEnd+drawEvery)
+
+	this.canvas.lineWidth = this.plotLineWidth;
+	this.canvas.strokeStyle = this.dataColors[dataIndex];
+	for(var i=iStart+1; i<=iEnd; i=i+drawEvery) {
+		var startX = this.xScale(d[i][0]);
+		var startY = this.yScale(d[i][1]);
+		var dir = d[i][2];
+		var mag = d[i][3];
+		
+		var cosDir = Math.cos(dir);
+		var sinDir = Math.sin(dir);
+		
+		var endX = startX+mag*cosDir;
+		var endY = startY-mag*sinDir;
+		
+		//var tipAngle = 0.1*Math.PI;
+		this.canvas.beginPath();
+		this.canvas.moveTo(startX, startY);
+		this.canvas.lineTo(endX, endY);
+		this.canvas.stroke();
+		
+		var tipSize = 8;
+		this.canvas.beginPath();
+		this.canvas.moveTo(startX+(mag-tipSize)*cosDir - 0.5*tipSize*sinDir,
+			startY-((mag-tipSize)*sinDir + 0.5*tipSize*cosDir));
+		this.canvas.lineTo(endX, endY);
+		this.canvas.lineTo(startX+(mag-tipSize)*cosDir + 0.5*tipSize*sinDir,
+			startY-((mag-tipSize)*sinDir - 0.5*tipSize*cosDir));
+		this.canvas.stroke();
+	}
+
+	//if(informationDensity <= this.showMarkerDensity) {
+	//	this.canvas.lineWidth = this.markerLineWidth;
+	//	for(var i=iStart; i<=iLast; ++i) {
+	//		this.canvas.beginPath();
+	//		this.canvas.arc(this.xScale(d[i][0]), this.yScale(d[i][1]),
+	//			this.markerRadius, 0, 2*Math.PI);
+	//		this.canvas.stroke();
+	//	}
+	//}
+};
+
+
 
 
 
 function CanvasDataPlotGroup(parentElement, plotDimensions, multiplePlots, syncPlots, config) {
-	this.config = this.shallowObjectCopy(config);
+	this.config = shallowObjectCopy(config);
 	this.container = parentElement;
 	this.width = plotDimensions[0];
 	this.height = plotDimensions[1];
@@ -649,16 +738,6 @@ function CanvasDataPlotGroup(parentElement, plotDimensions, multiplePlots, syncP
 	
 	this.config["updateViewCallback"] = (this.multiplePlots ? (this.setViews).bind(this) : null);
 }
-
-CanvasDataPlotGroup.prototype.shallowObjectCopy = function(inObj) {
-	var original = inObj || {};
-	var keys = Object.getOwnPropertyNames(original);
-	var outObj = {};
-	keys.forEach(function(k) {
-		outObj[k] = original[k];
-	});
-	return outObj;
-};
 
 CanvasDataPlotGroup.prototype.addDataSet = function(uniqueID, displayName, yAxisLabel, dataSet, color) {
 	if(this.multiplePlots || this.plots.length < 1) {
