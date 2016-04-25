@@ -5,8 +5,8 @@
   <title>CanvasPlot Demo</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="canvasplot.css">
-  <script src="jquery-2.2.3.min.js" charset="utf-8"></script>
-  <script src="d3.min.js" charset="utf-8"></script>
+  <script src="dep/jquery-2.2.3.min.js" charset="utf-8"></script>
+  <script src="dep/d3.min.js" charset="utf-8"></script>
   <script src="canvasplot.js" charset="utf-8"></script>
 </head>
 <body>
@@ -16,13 +16,20 @@
 </div>
 
 <script type="text/javascript">
+function getDemoPlotSize() {
+	return [window.innerWidth-100, Math.round(0.45*(window.innerWidth-100))];
+}
+
 $(document).ready(function() {
 	var data1 = [[-1,5], [0.5,6], [5,-2.5], [6,1], [10,9], [20,-55]];
-	var plot = new CanvasDataPlot(d3.select("#maincontainer"), [900, 450], {
+	var plot1 = new CanvasDataPlot(d3.select("#maincontainer"), [1000, 900], {
 		xAxisLabel: "IQ",
-		yAxisLabel: "Test Score"
+		yAxisLabel: "Test Score",
+		markerLineWidth: 3,
+		markerRadius: 5
 	});
-	plot.addDataSet("ds1", "Test 1", data1, "orange", true);
+	plot1.addDataSet("ds1", "Test 1", data1, "orange", true);
+	
 
 	var ts1 = [];
 	var ts2 = [];
@@ -33,14 +40,21 @@ $(document).ready(function() {
 		ts1.push([time, Math.random()]);
 		ts2.push([time, Math.random()]);
 	}
-	var plot2 = new TimeSeriesPlot(d3.select("#maincontainer"), [1000, 450], "Random", null);
-	plot2.addDataSet("plot1", "Random 1", ts1, "orange", true);
-	plot2.addDataSet("plot2", "Random 2", ts2, "steelblue", true);
-	plot2.setZoomYAxis(false);
-
-	$(window).resize(function() {
-		plot2.resize([window.innerWidth-100, Math.round(0.45*(window.innerWidth-100))]);
+	var plot2 = new CanvasTimeSeriesPlot(d3.select("#maincontainer"), getDemoPlotSize(), {
+		yAxisLabel: "Voltage [V]"
 	});
+	plot2.addDataSet("ds1", "Signal 1", ts1, "orange", true);
+	plot2.addDataSet("ds2", "Signal 2", ts2, "steelblue", true);
+	plot2.setZoomYAxis(false);
+	$(window).resize(function() {
+		plot2.resize(getDemoPlotSize());
+	});
+	
+	var tsPlotGroup = new CanvasTimeSeriesPlotGroup(d3.select("#maincontainer"), [550, 350], true, true, {});
+	tsPlotGroup.addDataSet("ds1", "Signal 1", "Voltage [V]", ts1, "orange");
+	tsPlotGroup.addDataSet("ds2", "Signal 2", "Voltage [V]", ts2, "steelblue");
+	tsPlotGroup.addDataSet("ds3", "Signal 3", "Voltage [V]", ts2, "blue");
+	tsPlotGroup.removeDataSet("ds3");
 });
 </script>
 </body>

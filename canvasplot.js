@@ -1,17 +1,3 @@
-// Copyright 2016 Arne Johanson
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
 
 function CanvasDataPlot(parentElement, canvasDimensions, config) {
 	config = config || {};
@@ -24,7 +10,7 @@ function CanvasDataPlot(parentElement, canvasDimensions, config) {
 	this.dataColors = [];
 	this.xAxisLabelText = config.xAxisLabel || "";
 	this.yAxisLabelText = config.yAxisLabel || "";
-	this.updateViewCallback = config.updateViewCallback;
+	this.updateViewCallback = config.updateViewCallback || null;
 	this.parent = parentElement;
 
 	this.gridColor = config.gridColor || "#DFDFDF";
@@ -184,6 +170,10 @@ CanvasDataPlot.prototype.removeDataSet = function(uniqueID) {
 		this.updateLegend();
 		this.drawCanvas();
 	}
+};
+
+CanvasDataPlot.prototype.getDataID = function(index) {
+	return (this.dataIDs.length > index ? this.dataIDs[index] : "");
 };
 
 CanvasDataPlot.prototype.updateTooltip = function() {
@@ -491,11 +481,8 @@ CanvasDataPlot.prototype.destroy = function() {
 
 
 
-
-function TimeSeriesPlot(parentElement, canvasDimensions, yAxisLabel, updateViewCallback, config) {
+function CanvasTimeSeriesPlot(parentElement, canvasDimensions, config) {
 	config = config || {};
-	config["yAxisLabel"] = yAxisLabel;
-	config["updateViewCallback"] = updateViewCallback;
 
 	this.informationDensity = [];
 
@@ -505,14 +492,14 @@ function TimeSeriesPlot(parentElement, canvasDimensions, yAxisLabel, updateViewC
 
 	CanvasDataPlot.call(this, parentElement, canvasDimensions, config);
 }
-TimeSeriesPlot.prototype = Object.create(CanvasDataPlot.prototype);
+CanvasTimeSeriesPlot.prototype = Object.create(CanvasDataPlot.prototype);
 
-TimeSeriesPlot.prototype.addDataSet = function(uniqueID, label, dataSet, colorString, updateDomains) {
+CanvasTimeSeriesPlot.prototype.addDataSet = function(uniqueID, label, dataSet, colorString, updateDomains) {
 	this.informationDensity.push(1);
 	CanvasDataPlot.prototype.addDataSet.call(this, uniqueID, label, dataSet, colorString, updateDomains);
 };
 
-TimeSeriesPlot.prototype.removeDataSet = function(uniqueID) {
+CanvasTimeSeriesPlot.prototype.removeDataSet = function(uniqueID) {
 	var index = this.dataIDs.indexOf(uniqueID);
 	if(index >= 0) {
 		this.informationDensity.splice(index, 1);
@@ -520,7 +507,7 @@ TimeSeriesPlot.prototype.removeDataSet = function(uniqueID) {
 	CanvasDataPlot.prototype.removeDataSet.call(this, uniqueID);
 };
 
-TimeSeriesPlot.prototype.updateDisplayIndices = function() {
+CanvasTimeSeriesPlot.prototype.updateDisplayIndices = function() {
 	CanvasDataPlot.prototype.updateDisplayIndices.call(this);
 
 	var nDataSets = this.data.length;
@@ -534,7 +521,7 @@ TimeSeriesPlot.prototype.updateDisplayIndices = function() {
 	}
 };
 
-TimeSeriesPlot.prototype.updateTooltip = function() {
+CanvasTimeSeriesPlot.prototype.updateTooltip = function() {
 	var mouse = d3.mouse(this.div.node());
 	var mx = mouse[0] - this.margin.left;
 	var my = mouse[1] - this.margin.top;
@@ -568,7 +555,7 @@ TimeSeriesPlot.prototype.updateTooltip = function() {
 	}
 };
 
-TimeSeriesPlot.prototype.setupXScaleAndAxis = function() {
+CanvasTimeSeriesPlot.prototype.setupXScaleAndAxis = function() {
 	this.xScale = d3.time.scale.utc()
 		.domain(this.calculateXDomain())
 		.range([0, this.width])
@@ -592,7 +579,7 @@ TimeSeriesPlot.prototype.setupXScaleAndAxis = function() {
 		.ticks(Math.round(this.xTicksPerPixel*this.width));
 };
 
-TimeSeriesPlot.prototype.drawDataSet = function(dataIndex) {
+CanvasTimeSeriesPlot.prototype.drawDataSet = function(dataIndex) {
 	var d = this.data[dataIndex];
 	var iStart = this.displayIndexStart[dataIndex];
 	var iEnd = this.displayIndexEnd[dataIndex];
@@ -621,11 +608,172 @@ TimeSeriesPlot.prototype.drawDataSet = function(dataIndex) {
 
 	if(informationDensity <= this.showMarkerDensity) {
 		this.canvas.lineWidth = this.markerLineWidth;
-		for(var i=iStart; i<=iLast; i++) {
+		for(var i=iStart; i<=iLast; ++i) {
 			this.canvas.beginPath();
 			this.canvas.arc(this.xScale(d[i][0]), this.yScale(d[i][1]),
 				this.markerRadius, 0, 2*Math.PI);
 			this.canvas.stroke();
 		}
 	}
+};
+
+
+
+
+
+
+function CanvasDataPlotGroup(parentElement, plotDimensions, multiplePlots, syncPlots, config) {
+	this.config = this.shallowObjectCopy(config);
+	this.container = parentElement;
+	this.width = plotDimensions[0];
+	this.height = plotDimensions[1];
+	this.plots = [];
+	this.multiplePlots = multiplePlots;
+	this.syncPlots = syncPlots;
+	this.lastZoomedPlot = null;
+	this.zoomXAxis = true;
+	this.zoomYAxis = true;
+	
+	this.config["updateViewCallback"] = (this.multiplePlots ? (this.setViews).bind(this) : null);
+}
+
+CanvasDataPlotGroup.prototype.shallowObjectCopy = function(inObj) {
+	var original = inObj || {};
+	var keys = Object.getOwnPropertyNames(original);
+	var outObj = {};
+	keys.forEach(function(k) {
+		outObj[k] = original[k];
+	});
+	return outObj;
+};
+
+CanvasDataPlotGroup.prototype.addDataSet = function(uniqueID, displayName, yAxisLabel, dataSet, color) {
+	if(this.multiplePlots || this.plots.length < 1) {
+		this.config["yAxisLabel"] = yAxisLabel;
+		var p = this.createPlot();
+		p.addDataSet(uniqueID, displayName, dataSet, color, false);
+		p.setZoomXAxis(this.zoomXAxis);
+		p.setZoomYAxis(this.zoomYAxis);
+		this.plots.push(p);
+		this.fitDataInViews();
+	}
+	else {
+		this.plots[0].addDataSet(uniqueID, displayName, dataSet, color, true);
+	}
+};
+
+CanvasDataPlotGroup.prototype.createPlot = function() {
+	return new CanvasDataPlot(this.container, [this.width, this.height], this.config);
+};
+
+CanvasDataPlotGroup.prototype.setSyncViews = function(sync) {
+	this.syncPlots = sync;
+	if(sync) {
+		if(this.lastZoomedPlot) {
+			var xDomain = this.lastZoomedPlot.getXDomain();
+			var yDomain = this.lastZoomedPlot.getYDomain();
+			this.plots.forEach(function(p) {
+				if(p != this.lastZoomedPlot) {
+					p.updateDomains(xDomain, yDomain, false);
+				}
+			});
+		}
+		else {
+			this.fitDataInViews();
+		}
+	}
+};
+
+CanvasDataPlotGroup.prototype.setZoomXAxis = function(zoomX) {
+	this.zoomXAxis = zoomX;
+	this.plots.forEach(function(p) {
+		p.setZoomXAxis(zoomX);
+	});
+};
+
+CanvasDataPlotGroup.prototype.setZoomYAxis = function(zoomY) {
+	this.zoomYAxis = zoomY;
+	this.plots.forEach(function(p) {
+		p.setZoomYAxis(zoomY);
+	});
+};
+
+CanvasDataPlotGroup.prototype.fitDataInViews = function() {
+	if(this.plots.length < 1) {
+		return;
+	}
+
+	var xDomain = this.plots[0].calculateXDomain();
+	var yDomain = this.plots[0].calculateYDomain();
+
+	for(var i=1; i<this.plots.length; ++i) {
+		var xDomainCandidate = this.plots[i].calculateXDomain();
+		var yDomainCandidate = this.plots[i].calculateYDomain();
+		if(xDomainCandidate[0] < xDomain[0]) { xDomain[0] = xDomainCandidate[0]; }
+		if(xDomainCandidate[1] > xDomain[1]) { xDomain[1] = xDomainCandidate[1]; }
+		if(yDomainCandidate[0] < yDomain[0]) { yDomain[0] = yDomainCandidate[0]; }
+		if(yDomainCandidate[1] > yDomain[1]) { yDomain[1] = yDomainCandidate[1]; }
+	}
+
+	this.plots.forEach(function(p) {
+		p.updateDomains(xDomain, yDomain, true);
+	});
+};
+
+CanvasDataPlotGroup.prototype.setViews = function(except, scale, translate) {
+	this.lastZoomedPlot = except;
+	if(!this.syncPlots) {
+		return;
+	}
+	this.plots.forEach(function(p) {
+		if(p != except) {
+			p.updateZoomValues(scale, translate);
+		}
+	});
+};
+
+CanvasDataPlotGroup.prototype.resize = function(dimensions) {
+	this.width = dimensions[0];
+	this.height = dimensions[1];
+	this.plots.forEach(function(p) {
+		p.resize(dimensions);
+	});
+};
+
+CanvasDataPlotGroup.prototype.removeDataSet = function(uniqueID) {
+	if(this.multiplePlots) {
+		var nPlots = this.plots.length;
+		for(var i=0; i<nPlots; ++i) {
+			if(this.plots[i].getDataID(0) === uniqueID) {
+				if(this.lastZoomedPlot === this.plots[i]) {
+					this.lastZoomedPlot = null;
+				}
+				this.plots[i].destroy();
+				this.plots.splice(i, 1);
+				break;
+			}
+		}
+	}
+	else if(this.plots.length > 0) {
+		this.plots[0].removeDataSet(uniqueID);
+	}
+};
+
+CanvasDataPlotGroup.prototype.destroy = function() {
+	this.plots.forEach(function(p) {
+		p.destroy();
+	});
+	this.lastZoomedPlot = null;
+	this.plots = [];
+};
+
+
+
+function CanvasTimeSeriesPlotGroup(parentElement, plotDimensions, multiplePlots, syncPlots, config) {
+	CanvasDataPlotGroup.call(this, parentElement, plotDimensions, multiplePlots, syncPlots, config);
+}
+CanvasTimeSeriesPlotGroup.prototype = Object.create(CanvasDataPlotGroup.prototype);
+
+CanvasTimeSeriesPlotGroup.prototype.createPlot = function() {
+	return new CanvasTimeSeriesPlot(this.container, [this.width, this.height], this.config);
 };
