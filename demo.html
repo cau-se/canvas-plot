@@ -50,10 +50,17 @@ $(document).ready(function() {
 		plot2.resize(getDemoPlotSize());
 	});
 	
-	var tsPlotGroup = new CanvasTimeSeriesPlotGroup(d3.select("#maincontainer"), [550, 350], true, true, {});
-	tsPlotGroup.addDataSet("ds1", "Signal 1", "Voltage [V]", ts1, "orange");
-	tsPlotGroup.addDataSet("ds2", "Signal 2", "Voltage [V]", ts2, "steelblue");
-	tsPlotGroup.addDataSet("ds3", "Signal 3", "Voltage [V]", ts2, "blue");
+	var tsPlotGroup = new CanvasDataPlotGroup(d3.select("#maincontainer"), [550, 350], true, true, {});
+	tsPlotGroup.addDataSet("CanvasTimeSeriesPlot", "ds1", "Signal 1", ts1, "orange", {
+		yAxisLabel: "Voltage [V]"
+	});
+	tsPlotGroup.addDataSet("CanvasTimeSeriesPlot", "ds2", "Signal 2", ts2, "steelblue", {
+		yAxisLabel: "Voltage [V]",
+		plotLineWidth: 1.5
+	});
+	tsPlotGroup.addDataSet("CanvasDataPlot", "ds3", "Signal 3", ts2, "blue", {
+		yAxisLabel: "Voltage [V]"
+	});
 	tsPlotGroup.removeDataSet("ds3");
 	
 	var plot3 = new CanvasVectorSeriesPlot(d3.select("#maincontainer"), [750, 500], {

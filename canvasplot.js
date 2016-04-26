@@ -724,38 +724,49 @@ CanvasVectorSeriesPlot.prototype.drawDataSet = function(dataIndex) {
 
 
 
-function CanvasDataPlotGroup(parentElement, plotDimensions, multiplePlots, syncPlots, config) {
-	this.config = shallowObjectCopy(config);
+function CanvasDataPlotGroup(parentElement, plotDimensions, multiplePlots, syncPlots, defaultConfig) {
+	this.defaultConfig = shallowObjectCopy(defaultConfig);
 	this.container = parentElement;
 	this.width = plotDimensions[0];
 	this.height = plotDimensions[1];
 	this.plots = [];
+	this.firstPlotType = "";
 	this.multiplePlots = multiplePlots;
 	this.syncPlots = syncPlots;
 	this.lastZoomedPlot = null;
 	this.zoomXAxis = true;
 	this.zoomYAxis = true;
 	
-	this.config["updateViewCallback"] = (this.multiplePlots ? (this.setViews).bind(this) : null);
+	this.defaultConfig["updateViewCallback"] = (this.multiplePlots ? (this.setViews).bind(this) : null);
 }
 
-CanvasDataPlotGroup.prototype.addDataSet = function(uniqueID, displayName, yAxisLabel, dataSet, color) {
+CanvasDataPlotGroup.prototype.addDataSet = function(plotType, uniqueID, displayName, dataSet, color, plotConfig) {
 	if(this.multiplePlots || this.plots.length < 1) {
-		this.config["yAxisLabel"] = yAxisLabel;
-		var p = this.createPlot();
+		var config = plotConfig ? shallowObjectCopy(plotConfig) : this.defaultConfig;
+		if(plotConfig && this.multiplePlots) {
+			config["updateViewCallback"] = (this.setViews).bind(this);
+		}
+		var p = this.createPlot(plotType, config);
 		p.addDataSet(uniqueID, displayName, dataSet, color, false);
 		p.setZoomXAxis(this.zoomXAxis);
 		p.setZoomYAxis(this.zoomYAxis);
 		this.plots.push(p);
+		this.firstPlotType = plotType;
 		this.fitDataInViews();
 	}
-	else {
+	else if(plotType === this.firstPlotType) {
 		this.plots[0].addDataSet(uniqueID, displayName, dataSet, color, true);
 	}
 };
 
-CanvasDataPlotGroup.prototype.createPlot = function() {
-	return new CanvasDataPlot(this.container, [this.width, this.height], this.config);
+CanvasDataPlotGroup.prototype.createPlot = function(plotType, plotConfig) {
+	if(plotType === "CanvasTimeSeriesPlot") {
+		return new CanvasTimeSeriesPlot(this.container, [this.width, this.height], plotConfig);
+	}
+	if(plotType === "CanvasVectorSeriesPlot") {
+		return new CanvasVectorSeriesPlot(this.container, [this.width, this.height], plotConfig);
+	}
+	return new CanvasDataPlot(this.container, [this.width, this.height], plotConfig);
 };
 
 CanvasDataPlotGroup.prototype.setSyncViews = function(sync) {
@@ -857,15 +868,4 @@ CanvasDataPlotGroup.prototype.destroy = function() {
 	});
 	this.lastZoomedPlot = null;
 	this.plots = [];
-};
-
-
-
-function CanvasTimeSeriesPlotGroup(parentElement, plotDimensions, multiplePlots, syncPlots, config) {
-	CanvasDataPlotGroup.call(this, parentElement, plotDimensions, multiplePlots, syncPlots, config);
-}
-CanvasTimeSeriesPlotGroup.prototype = Object.create(CanvasDataPlotGroup.prototype);
-
-CanvasTimeSeriesPlotGroup.prototype.createPlot = function() {
-	return new CanvasTimeSeriesPlot(this.container, [this.width, this.height], this.config);
 };
