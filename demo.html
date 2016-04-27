@@ -62,6 +62,7 @@ $(document).ready(function() {
 		yAxisLabel: "Voltage [V]"
 	});
 	tsPlotGroup.removeDataSet("ds3");
+	tsPlotGroup.setSyncViews(true, true, false);
 	
 	var plot3 = new CanvasVectorSeriesPlot(d3.select("#maincontainer"), [750, 500], {
 		yAxisLabel: "Depth [m]",
