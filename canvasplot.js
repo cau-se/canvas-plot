@@ -779,11 +779,13 @@ CanvasDataPlotGroup.prototype.setSyncViews = function(sync, translateX, translat
 		if(this.lastZoomedPlot) {
 			var xDomain = this.lastZoomedPlot.getXDomain();
 			var yDomain = this.lastZoomedPlot.getYDomain();
-			this.plots.forEach(function(p) {
+			this.plots.forEach((function(p) {
 				if(p != this.lastZoomedPlot) {
-					p.updateDomains(xDomain, yDomain, false);
+					p.updateDomains(this.syncTranslateX ? xDomain : p.getXDomain(),
+						this.syncTranslateY ? yDomain : p.getYDomain(),
+						false);
 				}
-			});
+			}).bind(this));
 		}
 		else {
 			this.fitDataInViews();
