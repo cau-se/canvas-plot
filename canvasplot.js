@@ -108,7 +108,7 @@ function CanvasDataPlot(parentElement, canvasDimensions, config) {
 		.on("zoom", (function() {
 			//console.log("Zoom: " + d3.event.scale + ", x=" + d3.event.translate[0] + ", y="+d3.event.translate[1]);
 			if(this.updateViewCallback) {
-				this.updateViewCallback(this, d3.event.scale, d3.event.translate);
+				this.updateViewCallback(this, this.xScale.domain(), this.yScale.domain());
 			}
 			this.updateDisplayIndices();
 			this.redrawCanvasAndAxes();
@@ -450,12 +450,10 @@ CanvasDataPlot.prototype.resetZoomListenerAxes = function() {
 		.y(this.yAxisZoom ? this.yScale : d3.scale.linear().domain([0,1]).range([0,1]));
 };
 
-CanvasDataPlot.prototype.updateZoomValues = function(scale, translate, translateX, translateY) {
-	var prevTranslate = this.zoomListener.translate();
+CanvasDataPlot.prototype.updateZoomValues = function(scale, translate) {
 	this.zoomListener
 		.scale(scale)
-		.translate([translateX ? translate[0] : prevTranslate[0],
-			translateY ? translate[1] : prevTranslate[1]]);
+		.translate(translate);
 	this.updateDisplayIndices();
 	this.redrawCanvasAndAxes();
 };
@@ -829,14 +827,16 @@ CanvasDataPlotGroup.prototype.fitDataInViews = function() {
 	});
 };
 
-CanvasDataPlotGroup.prototype.setViews = function(except, scale, translate) {
+CanvasDataPlotGroup.prototype.setViews = function(except, xDomain, yDomain) {
 	this.lastZoomedPlot = except;
 	if(!this.syncPlots) {
 		return;
 	}
 	this.plots.forEach((function(p) {
 		if(p != except) {
-			p.updateZoomValues(scale, translate, this.syncTranslateX, this.syncTranslateY);
+			p.updateDomains(this.syncTranslateX ? xDomain : p.getXDomain(),
+				this.syncTranslateY ? yDomain : p.getYDomain(),
+				false);
 		}
 	}).bind(this));
 };
