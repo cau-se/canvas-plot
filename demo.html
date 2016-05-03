@@ -28,7 +28,13 @@ $(document).ready(function() {
 		markerLineWidth: 3,
 		markerRadius: 5
 	});
-	plot1.addDataSet("ds1", "Test 1", data1, "orange", true);
+	plot1.addDataSet("ds1", "Test 1", data1, "orange", true, false);
+	plot1.addDataPoint("ds1", [15,0]); // Will not be added! (x values have to be in ascending order)
+	plot1.addDataPoint("ds1", [20,10]); // Will be added
+	plot1.addDataPoint("ds1", [21,0]);
+	plot1.updateDomains([-2,22], [-60,15], true);
+	// Since we told addDataSet() not to copy our data, data1 is mutated by addDataPoint().
+	console.log(data1);
 	
 
 	var ts1 = [];
@@ -43,12 +49,17 @@ $(document).ready(function() {
 	var plot2 = new CanvasTimeSeriesPlot(d3.select("#maincontainer"), getDemoPlotSize(), {
 		yAxisLabel: "Voltage [V]"
 	});
-	plot2.addDataSet("ds1", "Signal 1", ts1, "orange", true);
-	plot2.addDataSet("ds2", "Signal 2", ts2, "steelblue", true);
+	plot2.addDataSet("ds1", "Signal 1", ts1, "orange", true, true);
+	plot2.addDataSet("ds2", "Signal 2", ts2, "steelblue", true, true);
 	plot2.setZoomYAxis(false);
 	$(window).resize(function() {
 		plot2.resize(getDemoPlotSize());
 	});
+	var time = new Date(now);
+	time.setHours(101);
+	// Since we told addDataSet() to copy our data, ts1 is not mutated by addDataPoint().
+	// Cf. the plot of ts1 in the plot group below.
+	plot2.addDataPoint("ds1", [time, 1.5], true);
 	
 	var tsPlotGroup = new CanvasDataPlotGroup(d3.select("#maincontainer"), [550, 350], true, true, {});
 	tsPlotGroup.addDataSet("CanvasTimeSeriesPlot", "ds1", "Signal 1", ts1, "orange", {

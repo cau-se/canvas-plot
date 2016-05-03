@@ -151,16 +151,42 @@ CanvasDataPlot.prototype.setupYScaleAndAxis = function() {
 		.ticks(Math.round(this.yTicksPerPixel*this.height));
 };
 
-CanvasDataPlot.prototype.addDataSet = function(uniqueID, label, dataSet, colorString, updateDomains) {
+CanvasDataPlot.prototype.addDataSet = function(uniqueID, label, dataSet, colorString, updateDomains, copyData) {
 	this.dataIDs.push(uniqueID);
 	this.dataLabels.push(label);
-	this.data.push(dataSet);
 	this.dataColors.push(colorString);
 	this.displayIndexStart.push(0);
 	this.displayIndexEnd.push(0);
+	if(copyData) {
+		var dataIndex = this.data.length;
+		this.data.push([]);
+		var dataSetLength = dataSet.length;
+		for(var i=0; i<dataSetLength; ++i) {
+			this.data[dataIndex].push(dataSet[i].slice(0));
+		}
+	}
+	else {
+		this.data.push(dataSet);
+	}
 
 	this.updateLegend();
 
+	if(updateDomains) {
+		this.updateDomains(this.calculateXDomain(), this.calculateYDomain(), true);
+	}
+	else {
+		this.updateDisplayIndices();
+		this.drawCanvas();
+	}
+};
+
+CanvasDataPlot.prototype.addDataPoint = function(uniqueID, dataPoint, updateDomains) {
+	var i = this.dataIDs.indexOf(uniqueID);
+	if(i < 0 || (this.data[i].length > 0 && this.data[i][this.data[i].length-1][0] > dataPoint[0])) {
+		return;
+	}
+	this.data[i].push(dataPoint);
+	
 	if(updateDomains) {
 		this.updateDomains(this.calculateXDomain(), this.calculateYDomain(), true);
 	}
@@ -525,9 +551,9 @@ function CanvasTimeSeriesPlot(parentElement, canvasDimensions, config) {
 }
 CanvasTimeSeriesPlot.prototype = Object.create(CanvasDataPlot.prototype);
 
-CanvasTimeSeriesPlot.prototype.addDataSet = function(uniqueID, label, dataSet, colorString, updateDomains) {
+CanvasTimeSeriesPlot.prototype.addDataSet = function(uniqueID, label, dataSet, colorString, updateDomains, copyData) {
 	this.informationDensity.push(1);
-	CanvasDataPlot.prototype.addDataSet.call(this, uniqueID, label, dataSet, colorString, updateDomains);
+	CanvasDataPlot.prototype.addDataSet.call(this, uniqueID, label, dataSet, colorString, updateDomains, copyData);
 };
 
 CanvasTimeSeriesPlot.prototype.removeDataSet = function(uniqueID) {
