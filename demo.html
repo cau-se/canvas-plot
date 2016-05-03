@@ -30,7 +30,7 @@ $(document).ready(function() {
 	});
 	plot1.addDataSet("ds1", "Test 1", data1, "orange", true, false);
 	plot1.addDataPoint("ds1", [15,0]); // Will not be added! (x values have to be in ascending order)
-	plot1.addDataPoint("ds1", [20,10]); // Will be added
+	plot1.addDataPoint("ds1", [20,10]); // Will be added.
 	plot1.addDataPoint("ds1", [21,0]);
 	plot1.updateDomains([-2,22], [-60,15], true);
 	// Since we told addDataSet() not to copy our data, data1 is mutated by addDataPoint().
@@ -59,7 +59,9 @@ $(document).ready(function() {
 	time.setHours(101);
 	// Since we told addDataSet() to copy our data, ts1 is not mutated by addDataPoint().
 	// Cf. the plot of ts1 in the plot group below.
-	plot2.addDataPoint("ds1", [time, 1.5], true);
+	var newDataPoint = [time, 1.5];
+	plot2.addDataPoint("ds1", newDataPoint, true, true);
+	newDataPoint[1] = 3.0; // Has no effect since we told addDataPoint() to copy the new value.
 	
 	var tsPlotGroup = new CanvasDataPlotGroup(d3.select("#maincontainer"), [550, 350], true, true, {});
 	tsPlotGroup.addDataSet("CanvasTimeSeriesPlot", "ds1", "Signal 1", ts1, "orange", {

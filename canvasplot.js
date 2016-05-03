@@ -180,12 +180,12 @@ CanvasDataPlot.prototype.addDataSet = function(uniqueID, label, dataSet, colorSt
 	}
 };
 
-CanvasDataPlot.prototype.addDataPoint = function(uniqueID, dataPoint, updateDomains) {
+CanvasDataPlot.prototype.addDataPoint = function(uniqueID, dataPoint, updateDomains, copyData) {
 	var i = this.dataIDs.indexOf(uniqueID);
 	if(i < 0 || (this.data[i].length > 0 && this.data[i][this.data[i].length-1][0] > dataPoint[0])) {
 		return;
 	}
-	this.data[i].push(dataPoint);
+	this.data[i].push(copyData ? dataPoint.slice(0) : dataPoint);
 	
 	if(updateDomains) {
 		this.updateDomains(this.calculateXDomain(), this.calculateYDomain(), true);
