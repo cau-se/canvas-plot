@@ -127,29 +127,7 @@ function CanvasDataPlot(parentElement, canvasDimensions, config) {
 	this.resetZoomListenerAxes();
 }
 
-CanvasDataPlot.prototype.setupXScaleAndAxis = function() {
-	this.xScale = d3.scale.linear()
-		.domain(this.calculateXDomain())
-		.range([0, this.width])
-		.nice();
-
-	this.xAxis = d3.svg.axis()
-		.scale(this.xScale)
-		.orient("bottom")
-		.ticks(Math.round(this.xTicksPerPixel*this.width));
-};
-
-CanvasDataPlot.prototype.setupYScaleAndAxis = function() {
-	this.yScale = d3.scale.linear()
-		.domain(this.calculateYDomain())
-		.range([this.height, 0])
-		.nice();
-
-	this.yAxis = d3.svg.axis()
-		.scale(this.yScale)
-		.orient("left")
-		.ticks(Math.round(this.yTicksPerPixel*this.height));
-};
+// public interface
 
 CanvasDataPlot.prototype.addDataSet = function(uniqueID, label, dataSet, colorString, updateDomains, copyData) {
 	this.dataIDs.push(uniqueID);
@@ -209,6 +187,149 @@ CanvasDataPlot.prototype.removeDataSet = function(uniqueID) {
 		this.updateLegend();
 		this.drawCanvas();
 	}
+};
+
+CanvasDataPlot.prototype.setZoomXAxis = function(zoomX) {
+	if(this.xAxisZoom == zoomX) {
+		return;
+	}
+	this.xAxisZoom = zoomX;
+	this.resetZoomListenerAxes();
+};
+
+CanvasDataPlot.prototype.setZoomYAxis = function(zoomY) {
+	if(this.yAxisZoom == zoomY) {
+		return;
+	}
+	this.yAxisZoom = zoomY;
+	this.resetZoomListenerAxes();
+};
+
+CanvasDataPlot.prototype.resize = function(dimensions) {
+	this.totalWidth = Math.max(this.minCanvasWidth, dimensions[0]);
+	this.totalHeight = Math.max(this.minCanvasHeight, dimensions[1]);
+	this.width = this.totalWidth - this.margin.left - this.margin.right;
+	this.height = this.totalHeight - this.margin.top - this.margin.bottom;
+	this.div.style("width", this.totalWidth+"px")
+		.style("height", this.totalHeight+"px");
+	this.d3Canvas.attr("width", this.width)
+		.attr("height", this.height);
+	this.svg.attr("width", this.totalWidth)
+		.attr("height", this.totalHeight);
+	this.xScale.range([0, this.width]);
+	this.yScale.range([this.height, 0]);
+	this.xAxis
+		.ticks(Math.round(this.xTicksPerPixel*this.width));
+	this.yAxis
+		.ticks(Math.round(this.yTicksPerPixel*this.height));
+	this.xAxisGroup
+		.attr("transform", "translate(0,"+this.height+")");
+	if(this.xAxisLabel) {
+		this.xAxisLabel
+			.attr("x", Math.round(0.5*this.width))
+			.attr("y", this.height + 40);
+	}
+	if(this.yAxisLabel) {
+		this.yAxisLabel
+			.attr("x", Math.round(-0.5*this.height - this.margin.top));
+	}
+	if(this.legend) {
+		this.legend
+			.attr("transform", "translate("+(this.width - this.legendWidth - this.legendMargin)+", "+this.legendMargin+")");
+	}
+
+	this.updateDisplayIndices();
+	this.resetZoomListenerAxes();
+	this.redrawCanvasAndAxes();
+};
+
+CanvasDataPlot.prototype.updateDomains = function(xDomain, yDomain, makeItNice) {
+	this.xScale.domain(xDomain);
+	this.yScale.domain(yDomain);
+	if(makeItNice) {
+		this.xScale.nice();
+		this.yScale.nice();
+	}
+
+	this.updateDisplayIndices();
+	this.resetZoomListenerAxes();
+	this.redrawCanvasAndAxes();
+};
+
+CanvasDataPlot.prototype.getXDomain = function() {
+	return this.xScale.domain();
+};
+
+CanvasDataPlot.prototype.getYDomain = function() {
+	return this.yScale.domain();
+};
+
+CanvasDataPlot.prototype.calculateXDomain = function() {
+	if(this.data.length < 1) {
+		return [0, 1];
+	}
+
+	var min = this.data[0][0][0];
+	var max = this.data[0][this.data[0].length-1][0];
+	for(var i=1; i<this.data.length; ++i) {
+		var minCandidate = this.data[i][0][0];
+		var maxCandidate = this.data[i][this.data[i].length-1][0];
+		min = minCandidate < min ? minCandidate : min;
+		max = max < maxCandidate ? maxCandidate : max;
+	}
+	if(max-min <= 0) {
+		min = max;
+		max += 1;
+	}
+	return [min, max];
+};
+
+CanvasDataPlot.prototype.calculateYDomain = function() {
+	if(this.data.length < 1) {
+		 return [0, 1];
+	}
+
+	var min = d3.min(this.data[0], function(d) { return d[1]; });
+	var max = d3.max(this.data[0], function(d) { return d[1]; });
+	for(var i=1; i<this.data.length; ++i) {
+		min = Math.min(min, d3.min(this.data[i], function(d) { return d[1]; }));
+		max = Math.max(max, d3.max(this.data[i], function(d) { return d[1]; }));
+	}
+	if(max-min <= 0) {
+		min -= 1;
+		max += 1;
+	}
+	return [min, max];
+};
+
+CanvasDataPlot.prototype.destroy = function() {
+	this.div.remove();
+};
+
+// private methods
+
+CanvasDataPlot.prototype.setupXScaleAndAxis = function() {
+	this.xScale = d3.scale.linear()
+		.domain(this.calculateXDomain())
+		.range([0, this.width])
+		.nice();
+
+	this.xAxis = d3.svg.axis()
+		.scale(this.xScale)
+		.orient("bottom")
+		.ticks(Math.round(this.xTicksPerPixel*this.width));
+};
+
+CanvasDataPlot.prototype.setupYScaleAndAxis = function() {
+	this.yScale = d3.scale.linear()
+		.domain(this.calculateYDomain())
+		.range([this.height, 0])
+		.nice();
+
+	this.yAxis = d3.svg.axis()
+		.scale(this.yScale)
+		.orient("left")
+		.ticks(Math.round(this.yTicksPerPixel*this.height));
 };
 
 CanvasDataPlot.prototype.getDataID = function(index) {
@@ -322,65 +443,6 @@ CanvasDataPlot.prototype.updateLegend = function() {
 		.attr("transform", "translate("+(this.width - this.legendWidth - this.legendMargin)+", "+this.legendMargin+")");
 };
 
-CanvasDataPlot.prototype.getXDomain = function() {
-	return this.xScale.domain();
-};
-
-CanvasDataPlot.prototype.getYDomain = function() {
-	return this.yScale.domain();
-};
-
-CanvasDataPlot.prototype.calculateXDomain = function() {
-	if(this.data.length < 1) {
-		return [0, 1];
-	}
-
-	var min = this.data[0][0][0];
-	var max = this.data[0][this.data[0].length-1][0];
-	for(var i=1; i<this.data.length; ++i) {
-		var minCandidate = this.data[i][0][0];
-		var maxCandidate = this.data[i][this.data[i].length-1][0];
-		min = minCandidate < min ? minCandidate : min;
-		max = max < maxCandidate ? maxCandidate : max;
-	}
-	if(max-min <= 0) {
-		min = max;
-		max += 1;
-	}
-	return [min, max];
-};
-
-CanvasDataPlot.prototype.calculateYDomain = function() {
-	if(this.data.length < 1) {
-		 return [0, 1];
-	}
-
-	var min = d3.min(this.data[0], function(d) { return d[1]; });
-	var max = d3.max(this.data[0], function(d) { return d[1]; });
-	for(var i=1; i<this.data.length; ++i) {
-		min = Math.min(min, d3.min(this.data[i], function(d) { return d[1]; }));
-		max = Math.max(max, d3.max(this.data[i], function(d) { return d[1]; }));
-	}
-	if(max-min <= 0) {
-		min -= 1;
-		max += 1;
-	}
-	return [min, max];
-};
-
-CanvasDataPlot.prototype.updateDomains = function(xDomain, yDomain, makeItNice) {
-	this.xScale.domain(xDomain);
-	this.yScale.domain(yDomain);
-	if(makeItNice) {
-		this.xScale.nice();
-		this.yScale.nice();
-	}
-
-	this.updateDisplayIndices();
-	this.resetZoomListenerAxes();
-	this.redrawCanvasAndAxes();
-};
-
 CanvasDataPlot.prototype.findLargestSmaller = function(d, ia, ib, v) {
 	if(this.xScale(d[ia][0]) >= v || ib-ia <= 1) {
 		return ia;
@@ -454,22 +516,6 @@ CanvasDataPlot.prototype.drawDataSet = function(dataIndex) {
 	}
 };
 
-CanvasDataPlot.prototype.setZoomXAxis = function(zoomX) {
-	if(this.xAxisZoom == zoomX) {
-		return;
-	}
-	this.xAxisZoom = zoomX;
-	this.resetZoomListenerAxes();
-};
-
-CanvasDataPlot.prototype.setZoomYAxis = function(zoomY) {
-	if(this.yAxisZoom == zoomY) {
-		return;
-	}
-	this.yAxisZoom = zoomY;
-	this.resetZoomListenerAxes();
-};
-
 CanvasDataPlot.prototype.resetZoomListenerAxes = function() {
 	this.zoomListener
 		.x(this.xAxisZoom ? this.xScale : d3.scale.linear().domain([0,1]).range([0,1]))
@@ -484,49 +530,7 @@ CanvasDataPlot.prototype.updateZoomValues = function(scale, translate) {
 	this.redrawCanvasAndAxes();
 };
 
-CanvasDataPlot.prototype.resize = function(dimensions) {
-	this.totalWidth = Math.max(this.minCanvasWidth, dimensions[0]);
-	this.totalHeight = Math.max(this.minCanvasHeight, dimensions[1]);
-	this.width = this.totalWidth - this.margin.left - this.margin.right;
-	this.height = this.totalHeight - this.margin.top - this.margin.bottom;
-	this.div.style("width", this.totalWidth+"px")
-		.style("height", this.totalHeight+"px");
-	this.d3Canvas.attr("width", this.width)
-		.attr("height", this.height);
-	this.svg.attr("width", this.totalWidth)
-		.attr("height", this.totalHeight);
-	this.xScale.range([0, this.width]);
-	this.yScale.range([this.height, 0]);
-	this.xAxis
-		.ticks(Math.round(this.xTicksPerPixel*this.width));
-	this.yAxis
-		.ticks(Math.round(this.yTicksPerPixel*this.height));
-	this.xAxisGroup
-		.attr("transform", "translate(0,"+this.height+")");
-	if(this.xAxisLabel) {
-		this.xAxisLabel
-			.attr("x", Math.round(0.5*this.width))
-			.attr("y", this.height + 40);
-	}
-	if(this.yAxisLabel) {
-		this.yAxisLabel
-			.attr("x", Math.round(-0.5*this.height - this.margin.top));
-	}
-	if(this.legend) {
-		this.legend
-			.attr("transform", "translate("+(this.width - this.legendWidth - this.legendMargin)+", "+this.legendMargin+")");
-	}
-
-	this.updateDisplayIndices();
-	this.resetZoomListenerAxes();
-	this.redrawCanvasAndAxes();
-};
-
-CanvasDataPlot.prototype.destroy = function() {
-	this.div.remove();
-};
-
-function shallowObjectCopy(inObj) {
+function CanvasPlot_shallowObjectCopy(inObj) {
 	var original = inObj || {};
 	var keys = Object.getOwnPropertyNames(original);
 	var outObj = {};
@@ -679,7 +683,7 @@ CanvasTimeSeriesPlot.prototype.drawDataSet = function(dataIndex) {
 function CanvasVectorSeriesPlot(parentElement, canvasDimensions, config) {
 	// Data element format: [Date, y value, direction, magnitude]
 	
-	var configCopy = shallowObjectCopy(config);
+	var configCopy = CanvasPlot_shallowObjectCopy(config);
 	configCopy["showTooltips"] = false;
 	
 	CanvasTimeSeriesPlot.call(this, parentElement, canvasDimensions, configCopy);
@@ -751,7 +755,7 @@ CanvasVectorSeriesPlot.prototype.drawDataSet = function(dataIndex) {
 
 
 function CanvasDataPlotGroup(parentElement, plotDimensions, multiplePlots, syncPlots, defaultConfig) {
-	this.defaultConfig = shallowObjectCopy(defaultConfig);
+	this.defaultConfig = CanvasPlot_shallowObjectCopy(defaultConfig);
 	this.container = parentElement;
 	this.width = plotDimensions[0];
 	this.height = plotDimensions[1];
@@ -768,9 +772,11 @@ function CanvasDataPlotGroup(parentElement, plotDimensions, multiplePlots, syncP
 	this.defaultConfig["updateViewCallback"] = (this.multiplePlots ? (this.setViews).bind(this) : null);
 }
 
+// public interface
+
 CanvasDataPlotGroup.prototype.addDataSet = function(plotType, uniqueID, displayName, dataSet, color, plotConfig) {
 	if(this.multiplePlots || this.plots.length < 1) {
-		var config = plotConfig ? shallowObjectCopy(plotConfig) : this.defaultConfig;
+		var config = plotConfig ? CanvasPlot_shallowObjectCopy(plotConfig) : this.defaultConfig;
 		if(plotConfig && this.multiplePlots) {
 			config["updateViewCallback"] = (this.setViews).bind(this);
 		}
@@ -787,14 +793,23 @@ CanvasDataPlotGroup.prototype.addDataSet = function(plotType, uniqueID, displayN
 	}
 };
 
-CanvasDataPlotGroup.prototype.createPlot = function(plotType, plotConfig) {
-	if(plotType === "CanvasTimeSeriesPlot") {
-		return new CanvasTimeSeriesPlot(this.container, [this.width, this.height], plotConfig);
+CanvasDataPlotGroup.prototype.removeDataSet = function(uniqueID) {
+	if(this.multiplePlots) {
+		var nPlots = this.plots.length;
+		for(var i=0; i<nPlots; ++i) {
+			if(this.plots[i].getDataID(0) === uniqueID) {
+				if(this.lastZoomedPlot === this.plots[i]) {
+					this.lastZoomedPlot = null;
+				}
+				this.plots[i].destroy();
+				this.plots.splice(i, 1);
+				break;
+			}
+		}
 	}
-	if(plotType === "CanvasVectorSeriesPlot") {
-		return new CanvasVectorSeriesPlot(this.container, [this.width, this.height], plotConfig);
+	else if(this.plots.length > 0) {
+		this.plots[0].removeDataSet(uniqueID);
 	}
-	return new CanvasDataPlot(this.container, [this.width, this.height], plotConfig);
 };
 
 CanvasDataPlotGroup.prototype.setSyncViews = function(sync, translateX, translateY) {
@@ -855,6 +870,34 @@ CanvasDataPlotGroup.prototype.fitDataInViews = function() {
 	});
 };
 
+CanvasDataPlotGroup.prototype.resizePlots = function(dimensions) {
+	this.width = dimensions[0];
+	this.height = dimensions[1];
+	this.plots.forEach(function(p) {
+		p.resize(dimensions);
+	});
+};
+
+CanvasDataPlotGroup.prototype.destroy = function() {
+	this.plots.forEach(function(p) {
+		p.destroy();
+	});
+	this.lastZoomedPlot = null;
+	this.plots = [];
+};
+
+// private methods
+
+CanvasDataPlotGroup.prototype.createPlot = function(plotType, plotConfig) {
+	if(plotType === "CanvasTimeSeriesPlot") {
+		return new CanvasTimeSeriesPlot(this.container, [this.width, this.height], plotConfig);
+	}
+	if(plotType === "CanvasVectorSeriesPlot") {
+		return new CanvasVectorSeriesPlot(this.container, [this.width, this.height], plotConfig);
+	}
+	return new CanvasDataPlot(this.container, [this.width, this.height], plotConfig);
+};
+
 CanvasDataPlotGroup.prototype.setViews = function(except, xDomain, yDomain) {
 	this.lastZoomedPlot = except;
 	if(!this.syncPlots) {
@@ -867,39 +910,4 @@ CanvasDataPlotGroup.prototype.setViews = function(except, xDomain, yDomain) {
 				false);
 		}
 	}).bind(this));
-};
-
-CanvasDataPlotGroup.prototype.resize = function(dimensions) {
-	this.width = dimensions[0];
-	this.height = dimensions[1];
-	this.plots.forEach(function(p) {
-		p.resize(dimensions);
-	});
-};
-
-CanvasDataPlotGroup.prototype.removeDataSet = function(uniqueID) {
-	if(this.multiplePlots) {
-		var nPlots = this.plots.length;
-		for(var i=0; i<nPlots; ++i) {
-			if(this.plots[i].getDataID(0) === uniqueID) {
-				if(this.lastZoomedPlot === this.plots[i]) {
-					this.lastZoomedPlot = null;
-				}
-				this.plots[i].destroy();
-				this.plots.splice(i, 1);
-				break;
-			}
-		}
-	}
-	else if(this.plots.length > 0) {
-		this.plots[0].removeDataSet(uniqueID);
-	}
-};
-
-CanvasDataPlotGroup.prototype.destroy = function() {
-	this.plots.forEach(function(p) {
-		p.destroy();
-	});
-	this.lastZoomedPlot = null;
-	this.plots = [];
 };
