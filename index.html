@@ -22,14 +22,14 @@
       <h1>
 <a id="canvasplot" class="anchor" href="#canvasplot" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>CanvasPlot</h1>
 
-<p>CanvasPlot is a JavaScript plot library that is able to interactively visualize large data sets by using the  element.</p>
+<p>CanvasPlot is a JavaScript plot library that is able to interactively visualize large data sets by using the <code>&lt;canvas&gt;</code> element.</p>
 
 <h2>
 <a id="usage" class="anchor" href="#usage" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Usage</h2>
 
-<p>To create a new plot...</p>
+<p>A plot object for a scatter plot can be created in an empty <code>&lt;div&gt;</code> with id <code>plotcontainer</code> via:</p>
 
-<pre><code>var plot1 = new CanvasDataPlot(d3.select("#maincontainer"), [1000, 900], {
+<pre><code>var scatterPlot = new CanvasDataPlot(d3.select("#plotcontainer"), [600, 350], {
     xAxisLabel: "IQ",
     yAxisLabel: "Test Score",
     markerLineWidth: 3,
@@ -37,11 +37,23 @@
 });
 </code></pre>
 
+<p>To add data to <code>scatterPlot</code>, you need a data set consisting of an array of x/y pairs. The pairs have to ordered ascendingly by x value.</p>
+
+<pre><code>var data = [[-1,5], [0.5,6], [5,-2.5], [6,1], [10,9], [20,-55]];
+scatterPlot.addDataSet("dataSet1", "Test Results", data, "steelblue");
+</code></pre>
+
+<p>This results in the following plot being displayed:</p>
+
+<p>TODO: add Plot!</p>
+
 <h2>
 <a id="supported-plot-types" class="anchor" href="#supported-plot-types" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Supported Plot Types</h2>
 
 <h3>
 <a id="scatter-plot" class="anchor" href="#scatter-plot" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Scatter Plot</h3>
+
+<p>For an example of the <code>CanvasDataPlot</code> class, see above.</p>
 
 <h3>
 <a id="time-series-plot" class="anchor" href="#time-series-plot" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Time Series Plot</h3>
@@ -49,10 +61,31 @@
 <h3>
 <a id="vector-time-series-plot" class="anchor" href="#vector-time-series-plot" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Vector Time Series Plot</h3>
 
+<h3>
+<a id="plot-groups" class="anchor" href="#plot-groups" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Plot Groups</h3>
+
+<p>The <code>CanvasDataPlotGroup</code> class allows to group multiple plots and to synchronize their views.</p>
+
 <h1>
 <a id="api" class="anchor" href="#api" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>API</h1>
 
-<p>...</p>
+<p>All plot types share a common interface:</p>
+
+<ul>
+<li>one</li>
+<li>two with <code>code</code>
+</li>
+<li>three</li>
+</ul>
+
+<p>The interface of the <code>CanvasDataPlotGroup</code> consists of:</p>
+
+<ul>
+<li>one</li>
+<li>two with <code>code</code>
+</li>
+<li>three</li>
+</ul>
 
       <footer class="site-footer">
         <span class="site-footer-owner"><a href="https://github.com/a-johanson/canvas-plot">CanvasPlot</a> is maintained by <a href="https://github.com/a-johanson">a-johanson</a>.</span>
