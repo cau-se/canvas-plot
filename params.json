@@ -1,0 +1,6 @@
+{
+  "name": "CanvasPlot",
+  "tagline": "A JavaScript plotting library based on D3.js for visualizing large data sets",
+  "body": "# CanvasPlot\r\n\r\nCanvasPlot is a JavaScript plot library that is able to interactively visualize large data sets by using the <canvas> element.\r\n\r\n## Usage\r\n\r\nTo create a new plot...\r\n\r\n\tvar plot1 = new CanvasDataPlot(d3.select(\"#maincontainer\"), [1000, 900], {\r\n\t\txAxisLabel: \"IQ\",\r\n\t\tyAxisLabel: \"Test Score\",\r\n\t\tmarkerLineWidth: 3,\r\n\t\tmarkerRadius: 5\r\n\t});\r\n\r\n\r\n## Supported Plot Types\r\n\r\n### Scatter Plot\r\n\r\n### Time Series Plot\r\n\r\n### Vector Time Series Plot\r\n\r\n\r\n# API\r\n\r\n...",
+  "note": "Don't delete this file! It's used internally to help with page regeneration."
+}
