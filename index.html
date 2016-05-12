@@ -8,6 +8,10 @@
     <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
     <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen">
     <link rel="stylesheet" type="text/css" href="stylesheets/github-light.css" media="screen">
+    <link rel="stylesheet" href="canvasplot.css">
+    <script src="dep/demo/jquery-2.2.3.min.js" charset="utf-8"></script>
+    <script src="dep/canvasplot/d3.min.js" charset="utf-8"></script>
+    <script src="canvasplot.js" charset="utf-8"></script>
   </head>
   <body>
     <section class="page-header">
@@ -27,7 +31,7 @@
 <h2>
 <a id="usage" class="anchor" href="#usage" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Usage</h2>
 
-<p>A plot object for a scatter plot can be created in an empty <code>&lt;div&gt;</code> with id <code>plotcontainer</code> via:</p>
+<p>A scatter plot can be created in an empty <code>&lt;div&gt;</code> with id <code>plotcontainer</code> via:</p>
 
 <pre><code>var scatterPlot = new CanvasDataPlot(d3.select("#plotcontainer"), [600, 350], {
     xAxisLabel: "IQ",
@@ -37,15 +41,27 @@
 });
 </code></pre>
 
-<p>To add data to <code>scatterPlot</code>, you need a data set consisting of an array of x/y pairs. The pairs have to ordered ascendingly by x value.</p>
+<p>To add data to <code>scatterPlot</code>, we need a data set consisting of an array of <i>x</i>/<i>y</i> pairs. The pairs have to be ordered ascendingly by <i>x</i> value.</p>
 
-<pre><code>var data = [[-1,5], [0.5,6], [5,-2.5], [6,1], [10,9], [20,-55]];
+<pre><code>var data = [[64, 50], [90.5, 60], [95, 25], [101, 13], [110, 86], [118, 55]];
 scatterPlot.addDataSet("dataSet1", "Test Results", data, "steelblue");
 </code></pre>
 
-<p>This results in the following plot being displayed:</p>
+<p>This results in the following interactive plot being displayed (zoom and pan via mouse/touch):</p>
 
-<p>TODO: add Plot!</p>
+<div id="plotcontainerDemo"></div>
+<script>
+$(document).ready(function() {
+  var scatterPlot = new CanvasDataPlot(d3.select("#plotcontainerDemo"), [600, 350], {
+    xAxisLabel: "IQ",
+    yAxisLabel: "Test Score",
+    markerLineWidth: 3,
+    markerRadius: 5
+  });
+  var data = [[64,50], [90.5,60], [95,25], [101,13], [110,86], [118,55]];
+  scatterPlot.addDataSet("dataSet1", "Test Results", data, "steelblue", true);
+});
+</script>
 
 <h2>
 <a id="supported-plot-types" class="anchor" href="#supported-plot-types" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Supported Plot Types</h2>
@@ -58,13 +74,130 @@ scatterPlot.addDataSet("dataSet1", "Test Results", data, "steelblue");
 <h3>
 <a id="time-series-plot" class="anchor" href="#time-series-plot" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Time Series Plot</h3>
 
+<p>Time series plots are supported via the <code>CanvasTimeSeriesPlot</code> class:</p>
+
+<div id="plotcontainerTSPlot"></div>
+<script>
+$(document).ready(function() {
+  var ts1 = [];
+  var ts2 = [];
+  var now = new Date();
+  for(var i=0; i<3*48; ++i) {
+    var time = new Date(now);
+    time.setHours(i);
+    ts1.push([time, Math.sin(Math.PI * i/48) + 0.2*(Math.random()-0.5)]);
+    ts2.push([time, Math.cos(Math.PI * i/48) + 0.2*(Math.random()-0.5)]);
+  }
+  var tsPlot = new CanvasTimeSeriesPlot(d3.select("#plotcontainerTSPlot"), [750,400], {
+    yAxisLabel: "Voltage [V]"
+  });
+  tsPlot.addDataSet("ds1", "Signal 1", ts1, "orange", false);
+  tsPlot.addDataSet("ds2", "Signal 2", ts2, "steelblue", true);
+  tsPlot.setZoomYAxis(false);
+});
+</script>
+
+<pre><code>var ts1 = [];
+var ts2 = [];
+var now = new Date();
+for(var i=0; i<3*48; ++i) {
+    var time = new Date(now);
+    time.setHours(i);
+    ts1.push([time, Math.sin(Math.PI * i/48) + 0.2*(Math.random()-0.5)]);
+    ts2.push([time, Math.cos(Math.PI * i/48) + 0.2*(Math.random()-0.5)]);
+}
+var tsPlot = new CanvasTimeSeriesPlot(d3.select("#plotcontainerTSPlot"), [750,400], {
+    yAxisLabel: "Voltage [V]"
+});
+tsPlot.addDataSet("ds1", "Signal 1", ts1, "orange", false);
+tsPlot.addDataSet("ds2", "Signal 2", ts2, "steelblue", true);
+tsPlot.setZoomYAxis(false);
+</code></pre>
+
 <h3>
 <a id="vector-time-series-plot" class="anchor" href="#vector-time-series-plot" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Vector Time Series Plot</h3>
+
+<p>Vector-valued time series plots are supported via the <code>CanvasVectorSeriesPlot</code> class:</p>
+
+<div id="plotcontainerVVTSPlot"></div>
+<script>
+$(document).ready(function() {
+  var tsVector = [];
+  var now = new Date();
+  for(var i=0; i<1000; ++i) {
+    var time = new Date(now);
+    time.setHours(i);
+    tsVector.push([time, 50, 0.01*i*Math.PI, 100]);
+  }
+  var vvtsPlot = new CanvasVectorSeriesPlot(d3.select("#plotcontainerVVTSPlot"), [750, 400], {
+    yAxisLabel: "Depth [m]",
+    maxInformationDensity: 0.3,
+    plotLineWidth: 1.5
+  });
+  vvtsPlot.addDataSet("ts1", "Velocity", tsVector, "steelblue");
+  vvtsPlot.updateDomains([now, (new Date(now)).setHours(50)], [49, 51]);
+});
+</script>
+
+<pre><code>var tsVector = [];
+var now = new Date();
+for(var i=0; i<1000; ++i) {
+    var time = new Date(now);
+    time.setHours(i);
+    tsVector.push([time, 50, 0.01*i*Math.PI, 100]);
+}
+var vvtsPlot = new CanvasVectorSeriesPlot(d3.select("#plotcontainerVVTSPlot"), [750, 400], {
+    yAxisLabel: "Depth [m]",
+    maxInformationDensity: 0.3,
+    plotLineWidth: 1.5
+});
+vvtsPlot.addDataSet("ts1", "Velocity", tsVector, "steelblue");
+vvtsPlot.updateDomains([now, (new Date(now)).setHours(50)], [49, 51]);
+</code></pre>
 
 <h3>
 <a id="plot-groups" class="anchor" href="#plot-groups" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Plot Groups</h3>
 
-<p>The <code>CanvasDataPlotGroup</code> class allows to group multiple plots and to synchronize their views.</p>
+<p>The <code>CanvasDataPlotGroup</code> class allows to group multiple plots and to synchronize their views:</p>
+
+<div id="plotcontainerPlotGroup"></div>
+<script>
+$(document).ready(function() {
+  var ts1 = [];
+  var ts2 = [];
+  var now = new Date();
+  for(var i=0; i<3*48; ++i) {
+    var time = new Date(now);
+    time.setHours(i);
+    ts1.push([time, Math.sin(Math.PI * i/48) + 0.2*(Math.random()-0.5)]);
+    ts2.push([time, Math.cos(Math.PI * i/48) + 0.2*(Math.random()-0.5)]);
+  }
+  
+  var tsPlotGroup = new CanvasDataPlotGroup(d3.select("#plotcontainerPlotGroup"), [750, 250], true, true);
+	tsPlotGroup.addDataSet("CanvasTimeSeriesPlot", "ts1", "Signal 1", ts1, "orange", {
+		yAxisLabel: "Voltage [V]"
+	});
+	tsPlotGroup.addDataSet("CanvasTimeSeriesPlot", "ts2", "Signal 2", ts2, "steelblue", {
+		yAxisLabel: "Voltage [V]",
+		plotLineWidth: 1.5,
+    markerLineWidth: 1.5,
+	});
+  tsPlotGroup.setZoomYAxis(false);
+});
+</script>
+
+<pre><code>var tsPlotGroup = new CanvasDataPlotGroup(d3.select("#plotcontainerPlotGroup"),
+    [750, 250], true, true);
+tsPlotGroup.addDataSet("CanvasTimeSeriesPlot", "ts1", "Signal 1", ts1, "orange", {
+    yAxisLabel: "Voltage [V]"
+});
+tsPlotGroup.addDataSet("CanvasTimeSeriesPlot", "ts2", "Signal 2", ts2, "steelblue", {
+    yAxisLabel: "Voltage [V]",
+    plotLineWidth: 1.5,
+    markerLineWidth: 1.5,
+});
+tsPlotGroup.setZoomYAxis(false);
+</code></pre>
 
 <h1>
 <a id="api" class="anchor" href="#api" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>API</h1>
@@ -72,19 +205,53 @@ scatterPlot.addDataSet("dataSet1", "Test Results", data, "steelblue");
 <p>All plot types share a common interface:</p>
 
 <ul>
-<li>one</li>
-<li>two with <code>code</code>
-</li>
+<li><code>Constructor(parentElement, canvasDimensions, config)</code>, where the <code>config</code> object may contain the following properties:</li>
+  <ul>
+    <li><code>gridColor</code></li>
+    <li><code>plotLineWidth</code> (time series only)</li>
+	  <li><code>markerLineWidth</code></li>
+	  <li><code>markerRadius</code></li>
+    <li><code>maxInformationDensity</code> in data points per pixel (time series only)</li>
+    <li><code>showMarkerDensity</code> in data points per pixel (time series only)</li>
+    <li><code>showTooltips</code></li>
+	  <li><code>tooltipRadius</code></li>
+	  <li><code>xTicksPerPixel</code></li>
+	  <li><code>yTicksPerPixel</code></li>
+	  <li><code>minCanvasWidth</code></li>
+	  <li><code>minCanvasHeight</code></li>
+	  <li><code>legendMargin</code></li>
+	  <li><code>legendXPadding</code></li>
+	  <li><code>legendYPadding</code></li>
+	  <li><code>legendLineHeight</code></li>
+	  <li><code>margin</code> object; e.g., <code>{top: 20, right: 20, bottom: 30, left: 65}</code></li>
+  </ul>
+<li><code>addDataSet(uniqueID, label, dataSet, colorString, updateDomains, copyData)</code></li>
+<li><code>addDataPoint(uniqueID, dataPoint, updateDomains, copyData)</code></li>
+<li><code>removeDataSet(uniqueID)</code></li>
+<li><code>setZoomXAxis(zoomX)</code></li>
+<li><code>setZoomYAxis(zoomY)</code></li>
+<li><code>resize(dimensions)</code></li>
+<li><code>updateDomains(xDomain, yDomain, makeItNice)</code></li>
+<li><code>getXDomain()</code></li>
+<li><code>getYDomain()</code></li>
+<li><code>calculateXDomain()</code></li>
+<li><code>calculateYDomain()</code></li>
+<li><code>destroy()</code></li>
 <li>three</li>
 </ul>
 
 <p>The interface of the <code>CanvasDataPlotGroup</code> consists of:</p>
 
 <ul>
-<li>one</li>
-<li>two with <code>code</code>
-</li>
-<li>three</li>
+<li><code>CanvasDataPlotGroup(parentElement, plotDimensions, multiplePlots, syncPlots, defaultConfig)</code></li>
+<li><code>addDataSet(plotType, uniqueID, displayName, dataSet, color, plotConfig)</code></li>
+<li><code>removeDataSet(uniqueID)</code></li>
+<li><code>setSyncViews(sync, translateX, translateY)</code></li>
+<li><code>setZoomXAxis(zoomX)</code></li>
+<li><code>setZoomYAxis(zoomY)</code></li>
+<li><code>fitDataInViews()</code></li>
+<li><code>resizePlots(dimensions)</code></li>
+<li><code>destroy()</code></li>
 </ul>
 
       <footer class="site-footer">
