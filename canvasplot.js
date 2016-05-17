@@ -278,8 +278,8 @@ CanvasDataPlot.prototype.calculateXDomain = function() {
 		max = max < maxCandidate ? maxCandidate : max;
 	}
 	if(max-min <= 0) {
-		min = max;
-		max += 1;
+		min = 1*max; //NOTE: 1* is neceseccary to handle Dates in derived classes.
+		max = min+1;
 	}
 	return [min, max];
 };
