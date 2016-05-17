@@ -135,6 +135,7 @@ CanvasDataPlot.prototype.addDataSet = function(uniqueID, label, dataSet, colorSt
 	this.dataColors.push(colorString);
 	this.displayIndexStart.push(0);
 	this.displayIndexEnd.push(0);
+	dataSet = dataSet || [];
 	if(copyData) {
 		var dataIndex = this.data.length;
 		this.data.push([]);
@@ -457,6 +458,9 @@ CanvasDataPlot.prototype.updateDisplayIndices = function() {
 	var nDataSets = this.data.length;
 	for(var i=0; i<nDataSets; ++i) {
 		var d = this.data[i];
+		if(d.length < 1) {
+			continue;
+		}
 		var iStart = this.findLargestSmaller(d, 0, d.length-1, 0);
 		var iEnd = this.findLargestSmaller(d, iStart, d.length-1, this.width);
 		this.displayIndexStart[i] = iStart;
@@ -502,6 +506,9 @@ CanvasDataPlot.prototype.drawGrid = function() {
 
 CanvasDataPlot.prototype.drawDataSet = function(dataIndex) {
 	var d = this.data[dataIndex];
+	if(d.length < 1) {
+		return;
+	}
 	var iStart = this.displayIndexStart[dataIndex];
 	var iEnd = this.displayIndexEnd[dataIndex];
 	var iLast = Math.min(d.length-1 , iEnd+1);
@@ -574,6 +581,9 @@ CanvasTimeSeriesPlot.prototype.updateDisplayIndices = function() {
 	var nDataSets = this.data.length;
 	for(var i=0; i<nDataSets; ++i) {
 		var d = this.data[i];
+		if(d.length < 1) {
+			continue;
+		}
 		var iStart = this.displayIndexStart[i];
 		var iEnd = this.displayIndexEnd[i];
 		var iLength = iEnd - iStart + 1;
@@ -642,6 +652,9 @@ CanvasTimeSeriesPlot.prototype.setupXScaleAndAxis = function() {
 
 CanvasTimeSeriesPlot.prototype.drawDataSet = function(dataIndex) {
 	var d = this.data[dataIndex];
+	if(d.length < 1) {
+		return;
+	}
 	var iStart = this.displayIndexStart[dataIndex];
 	var iEnd = this.displayIndexEnd[dataIndex];
 	var informationDensity = this.informationDensity[dataIndex];
@@ -696,6 +709,9 @@ CanvasVectorSeriesPlot.prototype.updateTooltip = function() {
 
 CanvasVectorSeriesPlot.prototype.drawDataSet = function(dataIndex) {
 	var d = this.data[dataIndex];
+	if(d.length < 1) {
+		return;
+	}
 	var iStart = this.displayIndexStart[dataIndex];
 	var iEnd = this.displayIndexEnd[dataIndex];
 	var informationDensity = this.informationDensity[dataIndex];
