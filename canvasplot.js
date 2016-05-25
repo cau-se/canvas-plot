@@ -266,15 +266,22 @@ CanvasDataPlot.prototype.getYDomain = function() {
 };
 
 CanvasDataPlot.prototype.calculateXDomain = function() {
-	if(this.data.length < 1) {
+	var nonEmptySets = [];
+	this.data.forEach(function(ds) {
+		if(ds && ds.length > 0) {
+			nonEmptySets.push(ds);
+		}
+	});
+	
+	if(nonEmptySets.length < 1) {
 		return [0, 1];
 	}
 
-	var min = this.data[0][0][0];
-	var max = this.data[0][this.data[0].length-1][0];
-	for(var i=1; i<this.data.length; ++i) {
-		var minCandidate = this.data[i][0][0];
-		var maxCandidate = this.data[i][this.data[i].length-1][0];
+	var min = nonEmptySets[0][0][0];
+	var max = nonEmptySets[0][nonEmptySets[0].length-1][0];
+	for(var i=1; i<nonEmptySets.length; ++i) {
+		var minCandidate = nonEmptySets[i][0][0];
+		var maxCandidate = nonEmptySets[i][nonEmptySets[i].length-1][0];
 		min = minCandidate < min ? minCandidate : min;
 		max = max < maxCandidate ? maxCandidate : max;
 	}
@@ -286,8 +293,15 @@ CanvasDataPlot.prototype.calculateXDomain = function() {
 };
 
 CanvasDataPlot.prototype.calculateYDomain = function() {
-	if(this.data.length < 1) {
-		 return [0, 1];
+	var nonEmptySets = [];
+	this.data.forEach(function(ds) {
+		if(ds && ds.length > 0) {
+			nonEmptySets.push(ds);
+		}
+	});
+	
+	if(nonEmptySets.length < 1) {
+		return [0, 1];
 	}
 
 	var min = d3.min(this.data[0], function(d) { return d[1]; });
@@ -297,7 +311,7 @@ CanvasDataPlot.prototype.calculateYDomain = function() {
 		max = Math.max(max, d3.max(this.data[i], function(d) { return d[1]; }));
 	}
 	if(max-min <= 0) {
-		min -= 1;
+		min = max-1;
 		max += 1;
 	}
 	return [min, max];
