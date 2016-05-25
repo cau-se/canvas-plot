@@ -304,11 +304,11 @@ CanvasDataPlot.prototype.calculateYDomain = function() {
 		return [0, 1];
 	}
 
-	var min = d3.min(this.data[0], function(d) { return d[1]; });
-	var max = d3.max(this.data[0], function(d) { return d[1]; });
-	for(var i=1; i<this.data.length; ++i) {
-		min = Math.min(min, d3.min(this.data[i], function(d) { return d[1]; }));
-		max = Math.max(max, d3.max(this.data[i], function(d) { return d[1]; }));
+	var min = d3.min(nonEmptySets[0], function(d) { return d[1]; });
+	var max = d3.max(nonEmptySets[0], function(d) { return d[1]; });
+	for(var i=1; i<nonEmptySets.length; ++i) {
+		min = Math.min(min, d3.min(nonEmptySets[i], function(d) { return d[1]; }));
+		max = Math.max(max, d3.max(nonEmptySets[i], function(d) { return d[1]; }));
 	}
 	if(max-min <= 0) {
 		min = max-1;
