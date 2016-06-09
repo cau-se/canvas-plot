@@ -744,7 +744,7 @@ CanvasVectorSeriesPlot.prototype.drawDataSet = function(dataIndex) {
 	for(var i=iStart+1; i<=iEnd; i=i+drawEvery) {
 		var startX = this.xScale(d[i][0]);
 		var startY = this.yScale(d[i][1]);
-		var dir = d[i][2];
+		var dir = -1.0*d[i][2] + 0.5*Math.PI;
 		var mag = d[i][3];
 		
 		var cosDir = Math.cos(dir);
