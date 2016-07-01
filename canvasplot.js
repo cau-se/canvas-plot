@@ -560,6 +560,25 @@ function CanvasPlot_shallowObjectCopy(inObj) {
 	});
 	return outObj;
 }
+function CanvasPlot_appendToObject(obj, objToAppend) {
+	Object.keys(objToAppend).forEach(function(k) {
+		if(!obj.hasOwnProperty(k)) {
+			obj[k] = objToAppend[k];
+		}
+		else {
+			if(obj[k] !== null && typeof obj[k] === "object" && !Array.isArray(obj[k])) {
+				appendToObject(obj[k], objToAppend[k]);
+			}
+			else if(Array.isArray(obj[k]) && Array.isArray(objToAppend[k])) {
+				objToAppend[k].forEach(function(d) {
+					if(obj[k].indexOf(d) < 0) {
+						obj[k].push(d);
+					}
+				});
+			}
+		}
+	});
+}
 
 
 
@@ -709,6 +728,10 @@ CanvasTimeSeriesPlot.prototype.drawDataSet = function(dataIndex) {
 
 function CanvasVectorSeriesPlot(parentElement, canvasDimensions, config) {
 	// Data element format: [Date, y value, direction, magnitude]
+
+	this.vectorScale = config.vectorScale || 2.0e5;
+	this.scaleUnits = config.scaleUnits || "units";
+	this.scaleFont = config.scaleFont || "20px sans-serif";
 	
 	var configCopy = CanvasPlot_shallowObjectCopy(config);
 	configCopy["showTooltips"] = false;
@@ -720,6 +743,29 @@ CanvasVectorSeriesPlot.prototype = Object.create(CanvasTimeSeriesPlot.prototype)
 CanvasVectorSeriesPlot.prototype.updateTooltip = function() {
 	//TODO
 };
+
+CanvasVectorSeriesPlot.prototype.getMagnitudeScale = function() {
+	var xDomain = this.getXDomain();
+	return this.vectorScale * this.width / (xDomain[1] - xDomain[0]);
+};
+
+CanvasVectorSeriesPlot.prototype.drawCanvas = function() {
+	CanvasTimeSeriesPlot.prototype.drawCanvas.call(this);
+
+	var magScale = this.getMagnitudeScale();
+	var canvasScaleLength = 100;
+	var canvasScaleMargin = 8;
+	this.canvas.fillStyle = "black";
+	this.canvas.font = this.scaleFont;
+	this.canvas.fillText((canvasScaleLength/magScale).toFixed(1)+" "+this.scaleUnits, 2*canvasScaleMargin+canvasScaleLength, this.height-canvasScaleMargin);
+
+	this.canvas.lineWidth = 2*this.plotLineWidth;
+	this.canvas.strokeStyle = this.dataColors.length > 0 ? this.dataColors[0] : "black";
+	this.canvas.beginPath();
+	this.canvas.moveTo(canvasScaleMargin,                   this.height-2*canvasScaleMargin);
+	this.canvas.lineTo(canvasScaleMargin+canvasScaleLength, this.height-2*canvasScaleMargin);
+	this.canvas.stroke();
+}
 
 CanvasVectorSeriesPlot.prototype.drawDataSet = function(dataIndex) {
 	var d = this.data[dataIndex];
@@ -741,11 +787,12 @@ CanvasVectorSeriesPlot.prototype.drawDataSet = function(dataIndex) {
 
 	this.canvas.lineWidth = this.plotLineWidth;
 	this.canvas.strokeStyle = this.dataColors[dataIndex];
+	var magScale = this.getMagnitudeScale();
 	for(var i=iStart+1; i<=iEnd; i=i+drawEvery) {
 		var startX = this.xScale(d[i][0]);
 		var startY = this.yScale(d[i][1]);
 		var dir = -1.0*d[i][2] + 0.5*Math.PI;
-		var mag = d[i][3];
+		var mag = magScale*d[i][3];
 		
 		var cosDir = Math.cos(dir);
 		var sinDir = Math.sin(dir);
@@ -759,7 +806,7 @@ CanvasVectorSeriesPlot.prototype.drawDataSet = function(dataIndex) {
 		this.canvas.lineTo(endX, endY);
 		this.canvas.stroke();
 		
-		var tipSize = 8;
+		var tipSize = 10*magScale;
 		this.canvas.beginPath();
 		this.canvas.moveTo(startX+(mag-tipSize)*cosDir - 0.5*tipSize*sinDir,
 			startY-((mag-tipSize)*sinDir + 0.5*tipSize*cosDir));
@@ -806,7 +853,14 @@ function CanvasDataPlotGroup(parentElement, plotDimensions, multiplePlots, syncP
 
 CanvasDataPlotGroup.prototype.addDataSet = function(plotType, uniqueID, displayName, dataSet, color, plotConfig) {
 	if(this.multiplePlots || this.plots.length < 1) {
-		var config = plotConfig ? CanvasPlot_shallowObjectCopy(plotConfig) : this.defaultConfig;
+		var config = null;
+		if(plotConfig) {
+			config = CanvasPlot_shallowObjectCopy(plotConfig);
+			CanvasPlot_appendToObject(config, this.defaultConfig);
+		}
+		else {
+			config = this.defaultConfig;
+		}
 		if(plotConfig && this.multiplePlots) {
 			config["updateViewCallback"] = (this.setViews).bind(this);
 		}
