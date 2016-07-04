@@ -792,6 +792,7 @@ CanvasVectorSeriesPlot.prototype.drawDataSet = function(dataIndex) {
 	this.canvas.lineWidth = this.plotLineWidth;
 	this.canvas.strokeStyle = this.dataColors[dataIndex];
 	var magScale = this.getMagnitudeScale();
+	var tipSize = 10*magScale;
 	for(var i=iStart+1; i<=iEnd; i=i+drawEvery) {
 		var startX = this.xScale(d[i][0]);
 		var startY = this.yScale(d[i][1]);
@@ -810,7 +811,6 @@ CanvasVectorSeriesPlot.prototype.drawDataSet = function(dataIndex) {
 		this.canvas.lineTo(endX, endY);
 		this.canvas.stroke();
 		
-		var tipSize = 10*magScale;
 		this.canvas.beginPath();
 		this.canvas.moveTo(startX+(mag-tipSize)*cosDir - 0.5*tipSize*sinDir,
 			startY-((mag-tipSize)*sinDir + 0.5*tipSize*cosDir));
