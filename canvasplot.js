@@ -26,6 +26,7 @@ function CanvasDataPlot(parentElement, canvasDimensions, config) {
 	this.updateViewCallback = config.updateViewCallback || null;
 	this.parent = parentElement;
 
+	this.invertedYAxis = config.invertedYAxis || false;
 	this.gridColor = config.gridColor || "#DFDFDF";
 	this.markerLineWidth = config.markerLineWidth || 1;
 	this.markerRadius = config.markerRadius || 3.0;
@@ -338,7 +339,7 @@ CanvasDataPlot.prototype.setupXScaleAndAxis = function() {
 CanvasDataPlot.prototype.setupYScaleAndAxis = function() {
 	this.yScale = d3.scale.linear()
 		.domain(this.calculateYDomain())
-		.range([this.height, 0])
+		.range(this.invertedYAxis ? [0, this.height] : [this.height, 0])
 		.nice();
 
 	this.yAxis = d3.svg.axis()
@@ -731,10 +732,13 @@ function CanvasVectorSeriesPlot(parentElement, canvasDimensions, config) {
 
 	this.vectorScale = config.vectorScale || 2.0e5;
 	this.scaleUnits = config.scaleUnits || "units";
-	this.scaleFont = config.scaleFont || "20px sans-serif";
+	this.scaleFont = config.scaleFont || "16px sans-serif";
 	
 	var configCopy = CanvasPlot_shallowObjectCopy(config);
 	configCopy["showTooltips"] = false;
+	if(!("invertedYAxis" in configCopy)) {
+		configCopy["invertedYAxis"] = true;
+	}
 	
 	CanvasTimeSeriesPlot.call(this, parentElement, canvasDimensions, configCopy);
 }
@@ -754,7 +758,7 @@ CanvasVectorSeriesPlot.prototype.drawCanvas = function() {
 
 	var magScale = this.getMagnitudeScale();
 	var canvasScaleLength = 100;
-	var canvasScaleMargin = 8;
+	var canvasScaleMargin = 6;
 	this.canvas.fillStyle = "black";
 	this.canvas.font = this.scaleFont;
 	this.canvas.fillText((canvasScaleLength/magScale).toFixed(1)+" "+this.scaleUnits, 2*canvasScaleMargin+canvasScaleLength, this.height-canvasScaleMargin);
