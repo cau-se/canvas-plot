@@ -26,6 +26,8 @@ function CanvasDataPlot(parentElement, canvasDimensions, config) {
 	this.updateViewCallback = config.updateViewCallback || null;
 	this.parent = parentElement;
 
+	this.disableLegend = config.disableLegend || false;
+	this.invertYAxis = config.invertYAxis || false;
 	this.gridColor = config.gridColor || "#DFDFDF";
 	this.markerLineWidth = config.markerLineWidth || 1;
 	this.markerRadius = config.markerRadius || 3.0;
@@ -266,15 +268,22 @@ CanvasDataPlot.prototype.getYDomain = function() {
 };
 
 CanvasDataPlot.prototype.calculateXDomain = function() {
-	if(this.data.length < 1) {
+	var nonEmptySets = [];
+	this.data.forEach(function(ds) {
+		if(ds && ds.length > 0) {
+			nonEmptySets.push(ds);
+		}
+	});
+	
+	if(nonEmptySets.length < 1) {
 		return [0, 1];
 	}
 
-	var min = this.data[0][0][0];
-	var max = this.data[0][this.data[0].length-1][0];
-	for(var i=1; i<this.data.length; ++i) {
-		var minCandidate = this.data[i][0][0];
-		var maxCandidate = this.data[i][this.data[i].length-1][0];
+	var min = nonEmptySets[0][0][0];
+	var max = nonEmptySets[0][nonEmptySets[0].length-1][0];
+	for(var i=1; i<nonEmptySets.length; ++i) {
+		var minCandidate = nonEmptySets[i][0][0];
+		var maxCandidate = nonEmptySets[i][nonEmptySets[i].length-1][0];
 		min = minCandidate < min ? minCandidate : min;
 		max = max < maxCandidate ? maxCandidate : max;
 	}
@@ -286,18 +295,25 @@ CanvasDataPlot.prototype.calculateXDomain = function() {
 };
 
 CanvasDataPlot.prototype.calculateYDomain = function() {
-	if(this.data.length < 1) {
-		 return [0, 1];
+	var nonEmptySets = [];
+	this.data.forEach(function(ds) {
+		if(ds && ds.length > 0) {
+			nonEmptySets.push(ds);
+		}
+	});
+	
+	if(nonEmptySets.length < 1) {
+		return [0, 1];
 	}
 
-	var min = d3.min(this.data[0], function(d) { return d[1]; });
-	var max = d3.max(this.data[0], function(d) { return d[1]; });
-	for(var i=1; i<this.data.length; ++i) {
-		min = Math.min(min, d3.min(this.data[i], function(d) { return d[1]; }));
-		max = Math.max(max, d3.max(this.data[i], function(d) { return d[1]; }));
+	var min = d3.min(nonEmptySets[0], function(d) { return d[1]; });
+	var max = d3.max(nonEmptySets[0], function(d) { return d[1]; });
+	for(var i=1; i<nonEmptySets.length; ++i) {
+		min = Math.min(min, d3.min(nonEmptySets[i], function(d) { return d[1]; }));
+		max = Math.max(max, d3.max(nonEmptySets[i], function(d) { return d[1]; }));
 	}
 	if(max-min <= 0) {
-		min -= 1;
+		min = max-1;
 		max += 1;
 	}
 	return [min, max];
@@ -324,7 +340,7 @@ CanvasDataPlot.prototype.setupXScaleAndAxis = function() {
 CanvasDataPlot.prototype.setupYScaleAndAxis = function() {
 	this.yScale = d3.scale.linear()
 		.domain(this.calculateYDomain())
-		.range([this.height, 0])
+		.range(this.invertYAxis ? [0, this.height] : [this.height, 0])
 		.nice();
 
 	this.yAxis = d3.svg.axis()
@@ -404,6 +420,9 @@ CanvasDataPlot.prototype.removeTooltip = function() {
 };
 
 CanvasDataPlot.prototype.updateLegend = function() {
+	if(this.disableLegend) {
+		return;
+	}
 	if(this.legend) {
 		this.legend.remove();
 		this.legend = null;
@@ -545,6 +564,25 @@ function CanvasPlot_shallowObjectCopy(inObj) {
 		outObj[k] = original[k];
 	});
 	return outObj;
+}
+function CanvasPlot_appendToObject(obj, objToAppend) {
+	Object.keys(objToAppend).forEach(function(k) {
+		if(!obj.hasOwnProperty(k)) {
+			obj[k] = objToAppend[k];
+		}
+		else {
+			if(obj[k] !== null && typeof obj[k] === "object" && !Array.isArray(obj[k])) {
+				appendToObject(obj[k], objToAppend[k]);
+			}
+			else if(Array.isArray(obj[k]) && Array.isArray(objToAppend[k])) {
+				objToAppend[k].forEach(function(d) {
+					if(obj[k].indexOf(d) < 0) {
+						obj[k].push(d);
+					}
+				});
+			}
+		}
+	});
 }
 
 
@@ -695,9 +733,16 @@ CanvasTimeSeriesPlot.prototype.drawDataSet = function(dataIndex) {
 
 function CanvasVectorSeriesPlot(parentElement, canvasDimensions, config) {
 	// Data element format: [Date, y value, direction, magnitude]
+
+	this.vectorScale = config.vectorScale || 2.0e5;
+	this.scaleUnits = config.scaleUnits || "units";
+	this.scaleFont = config.scaleFont || "16px sans-serif";
 	
 	var configCopy = CanvasPlot_shallowObjectCopy(config);
 	configCopy["showTooltips"] = false;
+	if(!("invertYAxis" in configCopy)) {
+		configCopy["invertYAxis"] = true;
+	}
 	
 	CanvasTimeSeriesPlot.call(this, parentElement, canvasDimensions, configCopy);
 }
@@ -706,6 +751,29 @@ CanvasVectorSeriesPlot.prototype = Object.create(CanvasTimeSeriesPlot.prototype)
 CanvasVectorSeriesPlot.prototype.updateTooltip = function() {
 	//TODO
 };
+
+CanvasVectorSeriesPlot.prototype.getMagnitudeScale = function() {
+	var xDomain = this.getXDomain();
+	return this.vectorScale * this.width / (xDomain[1] - xDomain[0]);
+};
+
+CanvasVectorSeriesPlot.prototype.drawCanvas = function() {
+	CanvasTimeSeriesPlot.prototype.drawCanvas.call(this);
+
+	var magScale = this.getMagnitudeScale();
+	var canvasScaleLength = 100;
+	var canvasScaleMargin = 6;
+	this.canvas.fillStyle = "black";
+	this.canvas.font = this.scaleFont;
+	this.canvas.fillText((canvasScaleLength/magScale).toFixed(1)+" "+this.scaleUnits, 2*canvasScaleMargin+canvasScaleLength, this.height-canvasScaleMargin);
+
+	this.canvas.lineWidth = 2*this.plotLineWidth;
+	this.canvas.strokeStyle = this.dataColors.length > 0 ? this.dataColors[0] : "black";
+	this.canvas.beginPath();
+	this.canvas.moveTo(canvasScaleMargin,                   this.height-2*canvasScaleMargin);
+	this.canvas.lineTo(canvasScaleMargin+canvasScaleLength, this.height-2*canvasScaleMargin);
+	this.canvas.stroke();
+}
 
 CanvasVectorSeriesPlot.prototype.drawDataSet = function(dataIndex) {
 	var d = this.data[dataIndex];
@@ -727,11 +795,13 @@ CanvasVectorSeriesPlot.prototype.drawDataSet = function(dataIndex) {
 
 	this.canvas.lineWidth = this.plotLineWidth;
 	this.canvas.strokeStyle = this.dataColors[dataIndex];
+	var magScale = this.getMagnitudeScale();
+	var tipSize = 10*magScale;
 	for(var i=iStart+1; i<=iEnd; i=i+drawEvery) {
 		var startX = this.xScale(d[i][0]);
 		var startY = this.yScale(d[i][1]);
-		var dir = d[i][2];
-		var mag = d[i][3];
+		var dir = -1.0*d[i][2] + 0.5*Math.PI;
+		var mag = magScale*d[i][3];
 		
 		var cosDir = Math.cos(dir);
 		var sinDir = Math.sin(dir);
@@ -745,7 +815,6 @@ CanvasVectorSeriesPlot.prototype.drawDataSet = function(dataIndex) {
 		this.canvas.lineTo(endX, endY);
 		this.canvas.stroke();
 		
-		var tipSize = 8;
 		this.canvas.beginPath();
 		this.canvas.moveTo(startX+(mag-tipSize)*cosDir - 0.5*tipSize*sinDir,
 			startY-((mag-tipSize)*sinDir + 0.5*tipSize*cosDir));
@@ -792,7 +861,14 @@ function CanvasDataPlotGroup(parentElement, plotDimensions, multiplePlots, syncP
 
 CanvasDataPlotGroup.prototype.addDataSet = function(plotType, uniqueID, displayName, dataSet, color, plotConfig) {
 	if(this.multiplePlots || this.plots.length < 1) {
-		var config = plotConfig ? CanvasPlot_shallowObjectCopy(plotConfig) : this.defaultConfig;
+		var config = null;
+		if(plotConfig) {
+			config = CanvasPlot_shallowObjectCopy(plotConfig);
+			CanvasPlot_appendToObject(config, this.defaultConfig);
+		}
+		else {
+			config = this.defaultConfig;
+		}
 		if(plotConfig && this.multiplePlots) {
 			config["updateViewCallback"] = (this.setViews).bind(this);
 		}

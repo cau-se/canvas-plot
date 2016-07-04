@@ -213,7 +213,9 @@ tsPlotGroup.setZoomYAxis(false);
 	  <li><code>markerRadius</code></li>
     <li><code>maxInformationDensity</code> in data points per pixel (time series only)</li>
     <li><code>showMarkerDensity</code> in data points per pixel (time series only)</li>
+    <li><code>disableLegend</code></li>
     <li><code>showTooltips</code></li>
+    <li><code>invertYAxis</code></li>
 	  <li><code>tooltipRadius</code></li>
 	  <li><code>xTicksPerPixel</code></li>
 	  <li><code>yTicksPerPixel</code></li>
@@ -224,6 +226,9 @@ tsPlotGroup.setZoomYAxis(false);
 	  <li><code>legendYPadding</code></li>
 	  <li><code>legendLineHeight</code></li>
 	  <li><code>margin</code> object; e.g., <code>{top: 20, right: 20, bottom: 30, left: 65}</code></li>
+    <li><code>vectorScale</code> is a constant factor for scaling the magnitude of vectors (vector time series only)</li>
+    <li><code>scaleUnits</code> are the units (string) displayed in the scale of a vector time series plot</li>
+    <li><code>scaleFont</code> is the font used to render the scale of a vector time series plot (default: &quot;16px sans-serif&quot;)</li>
   </ul>
 <li><code>addDataSet(uniqueID, label, dataSet, colorString, updateDomains, copyData)</code></li>
 <li><code>addDataPoint(uniqueID, dataPoint, updateDomains, copyData)</code></li>
