@@ -80,7 +80,9 @@ $(document).ready(function() {
 	var plot3 = new CanvasVectorSeriesPlot(d3.select("#maincontainer"), [750, 500], {
 		yAxisLabel: "Depth [m]",
 		maxInformationDensity: 0.3,
-		plotLineWidth: 1.5
+		plotLineWidth: 1.5,
+		vectorScale: 7.0e5,
+		scaleUnits: "mm/s"
 	});
 	var tsVector1 = [];
 	for(var i=0; i<1000; ++i) {
@@ -89,6 +91,7 @@ $(document).ready(function() {
 		tsVector1.push([time, 50, 0.01*i*Math.PI, 100]);
 	}
 	plot3.addDataSet("ts1", "Velocity", tsVector1, "steelblue", true);
+	plot3.setZoomYAxis(false);
 });
 </script>
 </body>
