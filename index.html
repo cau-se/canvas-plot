@@ -132,10 +132,13 @@ $(document).ready(function() {
   var vvtsPlot = new CanvasVectorSeriesPlot(d3.select("#plotcontainerVVTSPlot"), [750, 400], {
     yAxisLabel: "Depth [m]",
     maxInformationDensity: 0.3,
-    plotLineWidth: 1.5
+    plotLineWidth: 1.5,
+    vectorScale: 3.0e5,
+		scaleUnits: "mm/s"
   });
   vvtsPlot.addDataSet("ts1", "Velocity", tsVector, "steelblue");
   vvtsPlot.updateDomains([now, (new Date(now)).setHours(50)], [49, 51]);
+  vvtsPlot.setZoomYAxis(false);
 });
 </script>
 
