@@ -1,49 +1,49 @@
 
-canvas, svg {
+.cvpChart {
+	position: relative;
+ 	float: left;
+}
+
+.cvpCanvas, .cvpSVG {
 	position: absolute;
 	top: 0;
 	left: 0;
 }
 
-.chart {
-	position: relative;
- 	float: left;
-}
-
-svg .label {
+svg .cvpLabel {
 	font-family: sans-serif;
 	font-size: 11px;
 }
 
-svg .legend {
+svg .cvpLegend {
 	font-family: sans-serif;
 	font-size: 11px;
 }
-svg .legendbg {
+svg .cvpLegendBG {
 	fill: rgba(255, 255, 255, 0.65);
 	stroke: black;
 	stroke-width: 1;
 	shape-rendering: crispEdges;
 }
 
-svg .plottooltip {
+svg .cvpTooltip {
 	font-family: sans-serif;
 	font-size: 11px;
 }
-svg .plottooltipbg {
+svg .cvpTooltipBG {
 	fill: rgba(255, 255, 255, 0.75);
 	stroke-width: 1;
 	shape-rendering: crispEdges;
 }
 
-svg .axis path,
-svg .axis line {
+svg .cvpAxis path,
+svg .cvpAxis line {
 	fill: none;
 	stroke: black;
 	stroke-width: 1;
 	shape-rendering: crispEdges;
 }
-svg .axis text {
+svg .cvpAxis text {
 	font-family: sans-serif;
 	font-size: 11px;
 }
