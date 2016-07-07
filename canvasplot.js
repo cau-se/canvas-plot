@@ -739,7 +739,8 @@ function CanvasVectorSeriesPlot(parentElement, canvasDimensions, config) {
 
 	this.vectorScale = config.vectorScale || 2.0e5;
 	this.scaleUnits = config.scaleUnits || "units";
-	this.scaleFont = config.scaleFont || "16px sans-serif";
+	this.scaleLength = config.scaleLength || 75;
+	this.scaleTextElem = null;
 	
 	var configCopy = CanvasPlot_shallowObjectCopy(config);
 	configCopy["showTooltips"] = false;
@@ -761,21 +762,8 @@ CanvasVectorSeriesPlot.prototype.getMagnitudeScale = function() {
 };
 
 CanvasVectorSeriesPlot.prototype.drawCanvas = function() {
+	this.updateScaleText();
 	CanvasTimeSeriesPlot.prototype.drawCanvas.call(this);
-
-	var magScale = this.getMagnitudeScale();
-	var canvasScaleLength = 100;
-	var canvasScaleMargin = 6;
-	this.canvas.fillStyle = "black";
-	this.canvas.font = this.scaleFont;
-	this.canvas.fillText((canvasScaleLength/magScale).toFixed(1)+" "+this.scaleUnits, 2*canvasScaleMargin+canvasScaleLength, this.height-canvasScaleMargin);
-
-	this.canvas.lineWidth = 2*this.plotLineWidth;
-	this.canvas.strokeStyle = this.dataColors.length > 0 ? this.dataColors[0] : "black";
-	this.canvas.beginPath();
-	this.canvas.moveTo(canvasScaleMargin,                   this.height-2*canvasScaleMargin);
-	this.canvas.lineTo(canvasScaleMargin+canvasScaleLength, this.height-2*canvasScaleMargin);
-	this.canvas.stroke();
 }
 
 CanvasVectorSeriesPlot.prototype.drawDataSet = function(dataIndex) {
@@ -836,6 +824,49 @@ CanvasVectorSeriesPlot.prototype.drawDataSet = function(dataIndex) {
 	//		this.canvas.stroke();
 	//	}
 	//}
+};
+
+CanvasVectorSeriesPlot.prototype.updateScaleText = function() {
+	if(this.disableLegend || !this.scaleTextElem) {
+		return;
+	}
+	var newLabel = (this.scaleLength/this.getMagnitudeScale()).toFixed(1) + this.scaleUnits;
+	this.scaleTextElem.text(newLabel);
+	var newLength = this.scaleTextElem.node().getComputedTextLength() + this.scaleLength + 3*this.legendXPadding;
+	var lengthDiff = this.legendWidth - newLength; 
+	if(lengthDiff < 0) {
+		this.legendWidth -= lengthDiff;
+		this.legendBG.attr("width", this.legendWidth);
+		this.legend
+			.attr("transform", "translate("+(this.width - this.legendWidth - this.legendMargin)+", "+this.legendMargin+")");
+	}
+};
+
+CanvasVectorSeriesPlot.prototype.updateLegend = function() {
+	if(this.disableLegend) {
+		return;
+	}
+	CanvasDataPlot.prototype.updateLegend.call(this);
+
+	if(!this.legend) {
+		return;
+	}
+
+	var oldHeight = parseInt(this.legendBG.attr("height"));
+	var newHeight = oldHeight + this.legendYPadding + this.legendLineHeight;
+	this.legendBG.attr("height", newHeight);
+
+	this.legend.append("rect")
+			.attr("x", this.legendXPadding)
+			.attr("y", newHeight - Math.floor((this.legendYPadding+0.5*this.legendLineHeight)) + 1)
+			.attr("width", this.scaleLength)
+			.attr("height", 2)
+			.attr("fill", "black")
+			.attr("stroke", "none");
+	this.scaleTextElem = this.legend.append("text")
+			.attr("x", 2*this.legendXPadding + this.scaleLength)
+			.attr("y", newHeight - this.legendYPadding);
+	this.updateScaleText();
 };
 
 
