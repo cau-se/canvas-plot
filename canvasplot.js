@@ -377,7 +377,7 @@ CanvasDataPlot.prototype.updateTooltip = function() {
 			var dy = this.yScale(d[j][1]) - my;
 			if(dx*dx + dy*dy <= this.tooltipRadiusSquared) {
 				hitMarker = true;
-				this.showTooltip([this.xScale(d[j][0]), this.yScale(d[j][1])], this.dataColors[i], "x = "+d[j][0], "y = "+d[j][1]);
+				this.showTooltip([this.xScale(d[j][0]), this.yScale(d[j][1])], this.dataColors[i], this.getTooltipStringX(d[j]), this.getTooltipStringY(d[j]));
 				break CanvasDataPlot_updateTooltip_graph_loop;
 			}
 		}
@@ -385,6 +385,14 @@ CanvasDataPlot.prototype.updateTooltip = function() {
 	if(!hitMarker){
 		this.removeTooltip();
 	}
+};
+
+CanvasDataPlot.prototype.getTooltipStringX = function(dataPoint) {
+	return "x = "+dataPoint[0];
+};
+
+CanvasDataPlot.prototype.getTooltipStringY = function(dataPoint) {
+	return "y = "+dataPoint[1];
 };
 
 CanvasDataPlot.prototype.showTooltip = function(position, color, xText, yText) {
@@ -657,7 +665,7 @@ CanvasTimeSeriesPlot.prototype.updateTooltip = function() {
 			var dy = this.yScale(d[j][1]) - my;
 			if(dx*dx + dy*dy <= this.tooltipRadiusSquared) {
 				hitMarker = true;
-				this.showTooltip([this.xScale(d[j][0]), this.yScale(d[j][1])], this.dataColors[i], (d[j][0]).toISOString(), "y = "+d[j][1]);
+				this.showTooltip([this.xScale(d[j][0]), this.yScale(d[j][1])], this.dataColors[i], this.getTooltipStringX(d[j]), this.getTooltipStringY(d[j]));
 				break TimeSeriesPlot_updateTooltip_graph_loop;
 			}
 		}
@@ -665,6 +673,20 @@ CanvasTimeSeriesPlot.prototype.updateTooltip = function() {
 	if(!hitMarker){
 		this.removeTooltip();
 	}
+};
+
+CanvasTimeSeriesPlot.prototype.getTooltipStringX = function(dataPoint) {
+	var zeroPad2 = function(n) {
+		return n<10 ? ("0"+n) : n.toString();
+	};
+	var date = dataPoint[0];
+	var Y = date.getUTCFullYear();
+	var M = zeroPad2(date.getUTCMonth());
+	var D = zeroPad2(date.getUTCDay());
+	var h = zeroPad2(date.getUTCHours());
+	var m = zeroPad2(date.getUTCMinutes());
+	var s = zeroPad2(date.getUTCSeconds());
+	return Y+"-"+M+"-"+D+" "+h+":"+m+":"+s;
 };
 
 CanvasTimeSeriesPlot.prototype.setupXScaleAndAxis = function() {
@@ -710,7 +732,7 @@ CanvasTimeSeriesPlot.prototype.drawDataSet = function(dataIndex) {
 
 	this.canvas.beginPath();
 	this.canvas.moveTo(this.xScale(d[iStart][0]), this.yScale(d[iStart][1]));
-	for(var i=iStart+1; i<=iEnd; i=i+drawEvery) {
+	for(var i=iStart; i<=iEnd; i=i+drawEvery) {
 		this.canvas.lineTo(this.xScale(d[i][0]),
 			this.yScale(d[i][1]));
 	}
@@ -743,7 +765,7 @@ function CanvasVectorSeriesPlot(parentElement, canvasDimensions, config) {
 	this.scaleTextElem = null;
 	
 	var configCopy = CanvasPlot_shallowObjectCopy(config);
-	configCopy["showTooltips"] = false;
+	//configCopy["showTooltips"] = false;
 	if(!("invertYAxis" in configCopy)) {
 		configCopy["invertYAxis"] = true;
 	}
@@ -752,8 +774,15 @@ function CanvasVectorSeriesPlot(parentElement, canvasDimensions, config) {
 }
 CanvasVectorSeriesPlot.prototype = Object.create(CanvasTimeSeriesPlot.prototype);
 
-CanvasVectorSeriesPlot.prototype.updateTooltip = function() {
-	//TODO
+//CanvasVectorSeriesPlot.prototype.updateTooltip = function() {
+//	//TODO
+//};
+
+CanvasVectorSeriesPlot.prototype.getTooltipStringY = function(dataPoint) {
+	var roundConst = 100;
+	var dir = Math.round(roundConst * 180/Math.PI * (dataPoint[2] % (2*Math.PI))) / roundConst;
+	var mag = Math.round(roundConst * dataPoint[3]) / roundConst;
+	return "y = " + dataPoint[1] + "; dir = " + dir + "; mag = " + mag;
 };
 
 CanvasVectorSeriesPlot.prototype.getMagnitudeScale = function() {
@@ -788,7 +817,7 @@ CanvasVectorSeriesPlot.prototype.drawDataSet = function(dataIndex) {
 	this.canvas.strokeStyle = this.dataColors[dataIndex];
 	var magScale = this.getMagnitudeScale();
 	var tipSize = 10*magScale;
-	for(var i=iStart+1; i<=iEnd; i=i+drawEvery) {
+	for(var i=iStart; i<=iEnd; i=i+drawEvery) {
 		var startX = this.xScale(d[i][0]);
 		var startY = this.yScale(d[i][1]);
 		var dir = -1.0*d[i][2] + 0.5*Math.PI;
