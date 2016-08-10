@@ -1,7 +1,7 @@
 
 .cvpChart {
 	position: relative;
- 	float: left;
+	display: inline-block;
 }
 
 .cvpCanvas, .cvpSVG {
