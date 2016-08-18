@@ -210,6 +210,8 @@ tsPlotGroup.setZoomYAxis(false);
 <ul>
 <li><code>Constructor(parentElement, canvasDimensions, config)</code>, where the <code>config</code> object may contain the following properties:</li>
   <ul>
+    <li><code>xAxisLabel</code></li>
+    <li><code>yAxisLabel</code></li>
     <li><code>gridColor</code></li>
     <li><code>plotLineWidth</code> (time series only)</li>
 	  <li><code>markerLineWidth</code></li>
@@ -228,7 +230,7 @@ tsPlotGroup.setZoomYAxis(false);
 	  <li><code>legendXPadding</code></li>
 	  <li><code>legendYPadding</code></li>
 	  <li><code>legendLineHeight</code></li>
-	  <li><code>margin</code> object; e.g., <code>{top: 20, right: 20, bottom: 30, left: 65}</code></li>
+	  <li><code>plotMargins</code> object; e.g., <code>{top: 20, right: 20, bottom: 30, left: 65}</code></li>
     <li><code>vectorScale</code> is a constant factor for scaling the magnitude of vectors (vector time series only; default value: <code>2.0e5</code>)</li>
     <li><code>scaleLength</code> is the length in pixels of the scale of a vector time series plot (default value: <code>75</code>)</li>
     <li><code>scaleUnits</code> are the units (string) displayed in the scale of a vector time series plot</li>
